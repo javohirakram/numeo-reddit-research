@@ -31,7 +31,11 @@ def run_ingest(
 
     with db.get_conn() as conn:
         for sub_cfg in subs:
-            _ingest_subreddit(conn, sub_cfg, limit_override, skip_classify)
+            try:
+                _ingest_subreddit(conn, sub_cfg, limit_override, skip_classify)
+            except Exception as e:
+                console.print(f"[red]r/{sub_cfg['name']} failed: {e}[/red]")
+                continue
 
 
 def _ingest_subreddit(conn, sub_cfg: dict, limit_override: int | None, skip_classify: bool) -> None:
