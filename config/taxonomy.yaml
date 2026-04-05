@@ -1,0 +1,52 @@
+# Controlled vocabulary for classification. Keep this stable across runs so that
+# stats stay comparable over time. Add new values deliberately, never rename.
+
+roles:
+  - owner_operator      # owns 1 truck, drives it themselves
+  - company_driver      # drives for someone else
+  - carrier_owner       # owns a small fleet (2-20 trucks)
+  - dispatcher          # in-house or independent dispatcher
+  - freight_broker      # brokerage side
+  - shipper             # cargo owner / manufacturer
+  - logistics_tech      # TMS/SaaS/tech folks
+  - unknown
+
+topics:
+  - load_board_frustration
+  - rate_negotiation
+  - broker_trust_and_scams
+  - detention_and_dwell
+  - eld_and_hos
+  - fuel_costs
+  - factoring_and_cashflow
+  - insurance_and_claims
+  - tms_and_software
+  - dispatch_workflow
+  - check_calls_and_updates
+  - safety_and_inspections
+  - market_conditions
+  - authority_and_compliance
+  - maintenance_and_repairs
+  - driver_recruiting_and_retention
+
+competitors:
+  # Fleet management / ELD
+  - Motive              # formerly KeepTruckin
+  - Samsara
+  - Geotab
+  - Omnitracs
+  # Load boards
+  - DAT
+  - Truckstop
+  - 123Loadboard
+  - Trucker Path
+  # TMS
+  - McLeod
+  - TruckingOffice
+  - Axon
+  - Dispatch Anywhere
+  - ProTransport
+  # Newer AI-first players
+  - Convoy              # defunct but still referenced
+  - Uber Freight
+  - Loadsmart

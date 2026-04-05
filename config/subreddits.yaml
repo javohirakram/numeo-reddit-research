@@ -1,0 +1,37 @@
+# Subreddits to ingest. Start small, expand once the pipeline is proven.
+# `limit` = max posts to fetch per run (delta-aware, so this is a safety cap)
+# `comment_limit` = how many top comments to pull per post
+# `audience_hint` = what kind of people dominate this sub (used as a classifier prior)
+
+subreddits:
+  - name: Truckers
+    limit: 50
+    comment_limit: 20
+    audience_hint: drivers (mix of company drivers and owner-operators)
+
+  - name: Trucking
+    limit: 50
+    comment_limit: 20
+    audience_hint: drivers and small carriers
+
+  - name: OwnerOperators
+    limit: 50
+    comment_limit: 20
+    audience_hint: owner-operators and small fleet owners
+
+  - name: FreightBrokers
+    limit: 30
+    comment_limit: 15
+    audience_hint: freight brokers and brokerages
+
+  - name: Dispatchers
+    limit: 30
+    comment_limit: 15
+    audience_hint: truck dispatchers
+
+  # --- expand to these after the 5 above are working ---
+  # - name: CDL
+  # - name: Truckdrivers
+  # - name: logistics
+  # - name: supplychain
+  # - name: smallbusiness
