@@ -371,7 +371,7 @@ async function runQuery() {
     answerEl.textContent = 'Found ' + hits.length + ' relevant posts. Synthesizing answer...';
 
     // 3. Gemini synthesis (CORS-enabled, no proxy needed)
-    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=' + GEMINI_KEY;
     var geminiRes = await fetch(geminiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
