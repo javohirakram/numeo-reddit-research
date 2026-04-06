@@ -72,6 +72,7 @@
     <div class="tab active" data-tab="dashboard">Dashboard</div>
     <div class="tab" data-tab="posts">Browse Posts</div>
     <div class="tab" data-tab="query">AI Query</div>
+    <div class="tab" data-tab="report">Report</div>
     <div class="tab" data-tab="settings">Settings</div>
   </div>
 
@@ -103,7 +104,7 @@
 
   <div id="query" class="tab-content">
     <div class="query-box">
-      <p style="margin-bottom:12px;color:var(--muted);font-size:13px;">Ask any question about the dataset. Uses Pinecone semantic search + OpenAI synthesis.</p>
+      <p style="margin-bottom:12px;color:var(--muted);font-size:13px;">Ask any question about 6,247 trucking Reddit posts. AI searches for relevant threads and synthesizes an answer with citations.</p>
       <div class="query-input">
         <input type="text" id="queryInput" placeholder="e.g. What do dispatchers hate most about check calls?">
         <button id="queryBtn">Search</button>
@@ -112,6 +113,13 @@
     </div>
     <div class="section-header">Quick queries</div>
     <div id="quickQueries" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+  </div>
+
+  <div id="report" class="tab-content">
+    <div class="section-header">Full Research Report</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Open the full styled HTML report in a new tab. Print to PDF with Cmd+P / Ctrl+P.</p>
+    <a href="https://github.com/javohirakram/numeo-reddit-research/blob/main/reports/comprehensive-research-report.md" target="_blank"><button>View Full Report on GitHub</button></a>
+    <a href="https://github.com/javohirakram/numeo-reddit-research/blob/main/reports/first-run-notes.md" target="_blank" style="margin-left:8px;"><button class="secondary">Growth Findings</button></a>
   </div>
 
   <div id="settings" class="tab-content">
@@ -313,7 +321,9 @@ async function runQuery() {
   var pineconeKey = localStorage.getItem('pinecone_key');
   var pineconeHost = localStorage.getItem('pinecone_host');
   var answerEl = document.getElementById('queryAnswer');
-  if (!openaiKey || !pineconeKey || !pineconeHost) { answerEl.style.display = 'block'; answerEl.textContent = 'Please set your API keys in the Settings tab first.'; return; }
+  if (!openaiKey) openaiKey = DEFAULT_KEYS.openai_key;
+  if (!pineconeKey) pineconeKey = DEFAULT_KEYS.pinecone_key;
+  if (!pineconeHost) pineconeHost = DEFAULT_KEYS.pinecone_host;
   var btn = document.getElementById('queryBtn');
   btn.disabled = true; btn.textContent = 'Searching...';
   answerEl.style.display = 'block'; answerEl.textContent = 'Searching Pinecone + synthesizing answer...';
@@ -365,7 +375,18 @@ function saveSettings() {
   alert('Settings saved to browser localStorage.');
 }
 
+// Default keys so queries work out of the box
+var DEFAULT_KEYS = {
+  openai_key: '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',
+  pinecone_key: 'pcsk_5nAxxb_8QgC1Tez3L1nqjiEUb7fJEYTg6zgD687WW3hrQ5tNfeoum7yXh7PCGVr6rpRrzu',
+  pinecone_host: 'numeo-reddit-d5h5qa8.svc.aped-4627-b74a.pinecone.io',
+};
+
 function loadSettings() {
+  // Auto-populate defaults if nothing saved
+  if (!localStorage.getItem('openai_key')) localStorage.setItem('openai_key', DEFAULT_KEYS.openai_key);
+  if (!localStorage.getItem('pinecone_key')) localStorage.setItem('pinecone_key', DEFAULT_KEYS.pinecone_key);
+  if (!localStorage.getItem('pinecone_host')) localStorage.setItem('pinecone_host', DEFAULT_KEYS.pinecone_host);
   document.getElementById('openaiKey').value = localStorage.getItem('openai_key') || '';
   document.getElementById('pineconeKey').value = localStorage.getItem('pinecone_key') || '';
   document.getElementById('pineconeHost').value = localStorage.getItem('pinecone_host') || '';
