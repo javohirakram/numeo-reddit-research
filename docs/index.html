@@ -104,15 +104,17 @@
 
   <div id="query" class="tab-content">
     <div class="query-box">
-      <p style="margin-bottom:12px;color:var(--muted);font-size:13px;">Ask any question about 6,247 trucking Reddit posts. AI searches for relevant threads and synthesizes an answer with citations.</p>
+      <p style="margin-bottom:12px;color:var(--muted);font-size:13px;">Search 6,247 trucking Reddit posts instantly. Matches keywords across titles, body text, pain points, and topics.</p>
       <div class="query-input">
-        <input type="text" id="queryInput" placeholder="e.g. What do dispatchers hate most about check calls?">
+        <input type="text" id="queryInput" placeholder="e.g. DAT load board frustration, check calls, TMS complaints, insurance cost...">
         <button id="queryBtn">Search</button>
       </div>
-      <div id="queryAnswer" style="display:none;" class="answer"></div>
     </div>
-    <div class="section-header">Quick queries</div>
-    <div id="quickQueries" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+    <div id="quickQueries" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px;"></div>
+    <div id="queryResults" style="display:none;">
+      <div class="count" id="queryCount"></div>
+      <div id="queryCards"></div>
+    </div>
   </div>
 
   <div id="report" class="tab-content">
@@ -243,11 +245,16 @@ function setupEventListeners() {
 
 function setupQuickQueries() {
   var queries = [
-    'What are the top pain points for owner-operators?',
-    'What do people say about DAT load board?',
-    'How do dispatchers feel about AI automation?',
-    'What TMS complaints come up most often?',
-    'What are the biggest issues with broker trust?',
+    'DAT load board',
+    'check calls broker',
+    'dispatcher workflow',
+    'rate negotiation lowball',
+    'TMS software complaints',
+    'insurance cost',
+    'Samsara Motive camera',
+    'factoring cashflow payment',
+    'authority compliance new carrier',
+    'double broker scam',
   ];
   var container = document.getElementById('quickQueries');
   queries.forEach(function(q) {
@@ -314,48 +321,126 @@ function renderPosts() {
 
 function loadMorePosts() { renderPosts(); }
 
-async function runQuery() {
-  var q = document.getElementById('queryInput').value.trim();
+function runQuery() {
+  var q = document.getElementById('queryInput').value.trim().toLowerCase();
   if (!q) return;
-  var openaiKey = localStorage.getItem('openai_key');
-  var pineconeKey = localStorage.getItem('pinecone_key');
-  var pineconeHost = localStorage.getItem('pinecone_host');
-  var answerEl = document.getElementById('queryAnswer');
-  if (!openaiKey) openaiKey = DEFAULT_KEYS.openai_key;
-  if (!pineconeKey) pineconeKey = DEFAULT_KEYS.pinecone_key;
-  if (!pineconeHost) pineconeHost = DEFAULT_KEYS.pinecone_host;
-  var btn = document.getElementById('queryBtn');
-  btn.disabled = true; btn.textContent = 'Searching...';
-  answerEl.style.display = 'block'; answerEl.textContent = 'Searching Pinecone + synthesizing answer...';
-  try {
-    var searchRes = await fetch('https://' + pineconeHost + '/records/namespaces/posts/search', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'Api-Key': pineconeKey },
-      body: JSON.stringify({ query: { inputs: { text: q }, top_k: 10 } }),
+  var terms = q.split(/\s+/).filter(function(t) { return t.length > 1; });
+
+  // Score each post by keyword relevance
+  var scored = DATA.map(function(p) {
+    var text = (p.title + ' ' + (p.body || '') + ' ' + p.pains.join(' ') + ' ' + p.topics.join(' ') + ' ' + p.competitors.join(' ')).toLowerCase();
+    var score = 0;
+    terms.forEach(function(term) {
+      // Title matches worth 3x
+      if (p.title.toLowerCase().indexOf(term) !== -1) score += 3;
+      // Pain points match worth 2x
+      if (p.pains.join(' ').toLowerCase().indexOf(term) !== -1) score += 2;
+      // Topic match worth 2x
+      if (p.topics.join(' ').toLowerCase().indexOf(term) !== -1) score += 2;
+      // Competitor match worth 2x
+      if (p.competitors.join(' ').toLowerCase().indexOf(term) !== -1) score += 2;
+      // Body match worth 1x
+      if ((p.body || '').toLowerCase().indexOf(term) !== -1) score += 1;
     });
-    var searchData = await searchRes.json();
-    var hits = (searchData.result && searchData.result.hits ? searchData.result.hits : []).slice(0, 10);
-    var passages = hits.map(function(h, i) {
-      var local = DATA.find(function(p) { return p.id === h._id; });
-      var title = local ? local.title : ''; var body = local ? local.body : '';
-      var sub = local ? local.sub : ''; var url = local ? local.url : '';
-      return '[#' + (i+1) + '] r/' + sub + ' -- ' + title + '\n' + body + '\nURL: ' + url;
-    }).join('\n\n---\n\n');
-    var llmRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaiKey },
-      body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.3, messages: [
-        { role: 'system', content: 'You are a market research analyst for Numeo AI. Answer based on the Reddit posts provided. Cite sources as [#N]. Be concise and insightful.' },
-        { role: 'user', content: 'Question: ' + q + '\n\nPassages:\n' + passages + '\n\nAnswer using ONLY these passages. Cite with [#N].' },
-      ]}),
+    // Boost by Reddit score and Numeo relevance
+    if (score > 0) {
+      score += Math.min(p.score, 20) * 0.1;
+      score += p.relevance * 0.5;
+    }
+    return { post: p, score: score };
+  }).filter(function(s) { return s.score > 0; });
+
+  scored.sort(function(a, b) { return b.score - a.score; });
+  var results = scored.slice(0, 50);
+
+  var resultsDiv = document.getElementById('queryResults');
+  var countDiv = document.getElementById('queryCount');
+  var cardsDiv = document.getElementById('queryCards');
+  resultsDiv.style.display = 'block';
+  countDiv.textContent = 'Found ' + scored.length + ' matching posts (showing top 50)';
+
+  cardsDiv.textContent = '';
+  if (results.length === 0) {
+    countDiv.textContent = 'No matching posts found. Try different keywords.';
+    return;
+  }
+
+  results.forEach(function(r) {
+    var p = r.post;
+    var card = document.createElement('div');
+    card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;';
+
+    var titleLink = document.createElement('a');
+    titleLink.href = p.url;
+    titleLink.target = '_blank';
+    titleLink.textContent = p.title;
+    titleLink.style.cssText = 'color:var(--accent);text-decoration:none;font-weight:600;font-size:14px;';
+
+    var meta = document.createElement('span');
+    meta.style.cssText = 'color:var(--muted);font-size:12px;white-space:nowrap;margin-left:12px;';
+    meta.textContent = 'r/' + p.sub + ' | ' + p.score + ' pts | ' + p.comments + ' comments';
+
+    header.appendChild(titleLink);
+    header.appendChild(meta);
+    card.appendChild(header);
+
+    // Tags row
+    var tags = document.createElement('div');
+    tags.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;';
+    if (p.role && p.role !== 'unknown') {
+      var roleBadge = document.createElement('span');
+      roleBadge.className = 'badge badge-rel';
+      roleBadge.textContent = p.role;
+      tags.appendChild(roleBadge);
+    }
+    var sentClass = p.sentiment === 'positive' ? 'badge-pos' : p.sentiment === 'negative' ? 'badge-neg' : 'badge-neu';
+    var sentBadge = document.createElement('span');
+    sentBadge.className = 'badge ' + sentClass;
+    sentBadge.textContent = p.sentiment || 'neutral';
+    tags.appendChild(sentBadge);
+    if (p.relevance >= 3) {
+      var relBadge = document.createElement('span');
+      relBadge.className = 'badge badge-rel';
+      relBadge.textContent = 'Relevance: ' + p.relevance + '/5';
+      tags.appendChild(relBadge);
+    }
+    p.topics.slice(0, 3).forEach(function(t) {
+      var topicBadge = document.createElement('span');
+      topicBadge.style.cssText = 'display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;background:rgba(88,166,255,0.1);color:var(--accent);';
+      topicBadge.textContent = t.replace(/_/g, ' ');
+      tags.appendChild(topicBadge);
     });
-    var llmData = await llmRes.json();
-    var answer = (llmData.choices && llmData.choices[0] && llmData.choices[0].message) ? llmData.choices[0].message.content : 'No answer generated.';
-    var sources = hits.map(function(h, i) {
-      var local = DATA.find(function(p) { return p.id === h._id; });
-      return '[#' + (i+1) + '] r/' + (local ? local.sub : '?') + ' -- ' + (local ? local.title : '').slice(0,60) + ' (' + (local ? local.url : '') + ')';
-    }).join('\n');
-    answerEl.textContent = answer + '\n\n--- Sources ---\n' + sources;
-  } catch (e) { answerEl.textContent = 'Error: ' + e.message; }
-  finally { btn.disabled = false; btn.textContent = 'Search'; }
+    card.appendChild(tags);
+
+    // Body snippet
+    if (p.body) {
+      var bodyEl = document.createElement('p');
+      bodyEl.style.cssText = 'color:var(--muted);font-size:13px;margin-bottom:8px;';
+      bodyEl.textContent = p.body.length > 300 ? p.body.slice(0, 300) + '...' : p.body;
+      card.appendChild(bodyEl);
+    }
+
+    // Pain points
+    if (p.pains.length > 0) {
+      var painsEl = document.createElement('div');
+      painsEl.style.cssText = 'font-size:12px;color:var(--yellow);';
+      painsEl.textContent = 'Pain points: ' + p.pains.join(' | ');
+      card.appendChild(painsEl);
+    }
+
+    // Competitors
+    if (p.competitors.length > 0) {
+      var compsEl = document.createElement('div');
+      compsEl.style.cssText = 'font-size:12px;color:var(--green);margin-top:4px;';
+      compsEl.textContent = 'Competitors mentioned: ' + p.competitors.join(', ');
+      card.appendChild(compsEl);
+    }
+
+    cardsDiv.appendChild(card);
+  });
 }
 
 function quickQuery(q) {
@@ -375,18 +460,7 @@ function saveSettings() {
   alert('Settings saved to browser localStorage.');
 }
 
-// Default keys so queries work out of the box
-var DEFAULT_KEYS = {
-  openai_key: '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',
-  pinecone_key: 'pcsk_5nAxxb_8QgC1Tez3L1nqjiEUb7fJEYTg6zgD687WW3hrQ5tNfeoum7yXh7PCGVr6rpRrzu',
-  pinecone_host: 'numeo-reddit-d5h5qa8.svc.aped-4627-b74a.pinecone.io',
-};
-
 function loadSettings() {
-  // Auto-populate defaults if nothing saved
-  if (!localStorage.getItem('openai_key')) localStorage.setItem('openai_key', DEFAULT_KEYS.openai_key);
-  if (!localStorage.getItem('pinecone_key')) localStorage.setItem('pinecone_key', DEFAULT_KEYS.pinecone_key);
-  if (!localStorage.getItem('pinecone_host')) localStorage.setItem('pinecone_host', DEFAULT_KEYS.pinecone_host);
   document.getElementById('openaiKey').value = localStorage.getItem('openai_key') || '';
   document.getElementById('pineconeKey').value = localStorage.getItem('pinecone_key') || '';
   document.getElementById('pineconeHost').value = localStorage.getItem('pinecone_host') || '';
