@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Numeo Reddit Research</title>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 <style>
   :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --red: #f85149; --yellow: #d29922; --purple: #bc8cff; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -47,7 +48,28 @@
   button:hover { opacity: 0.9; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
   button.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
-  .answer { margin-top: 16px; padding: 16px; background: rgba(88,166,255,0.05); border-radius: 6px; border-left: 3px solid var(--accent); white-space: pre-wrap; }
+  .answer { margin-top: 16px; padding: 20px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .answer h2 { font-size: 17px; margin: 20px 0 10px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .answer h2:first-child { margin-top: 0; }
+  .answer h3 { font-size: 14px; margin: 16px 0 8px; color: var(--text); }
+  .answer p { margin: 8px 0; line-height: 1.7; }
+  .answer strong { color: #fff; }
+  .answer ul, .answer ol { margin: 8px 0 8px 20px; }
+  .answer li { margin: 4px 0; line-height: 1.6; }
+  .answer blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: rgba(88,166,255,0.05); border-radius: 0 6px 6px 0; font-style: italic; color: var(--muted); }
+  .answer a { color: var(--accent); text-decoration: none; }
+  .answer a:hover { text-decoration: underline; }
+  .answer code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+  .answer hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .answer table { border-collapse: collapse; margin: 12px 0; width: 100%; }
+  .answer th, .answer td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; font-size: 13px; }
+  .answer th { background: rgba(88,166,255,0.08); }
+  .sources-list { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .sources-list h4 { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .source-item { display: flex; gap: 8px; margin: 6px 0; font-size: 12px; line-height: 1.5; }
+  .source-num { color: var(--accent); font-weight: 600; min-width: 28px; }
+  .source-meta { color: var(--muted); }
+  .source-meta a { color: var(--accent); }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
   .badge-pos { background: rgba(63,185,80,0.15); color: var(--green); }
   .badge-neg { background: rgba(248,81,73,0.15); color: var(--red); }
@@ -338,43 +360,56 @@ var GEMINI_KEY = 'AIzaSyBb0h1ffC-eNaQCPf8WXUwkRFBFPVBbQSM';
 var PC_KEY = 'pcsk_5nAxxb_8QgC1Tez3L1nqjiEUb7fJEYTg6zgD687WW3hrQ5tNfeoum7yXh7PCGVr6rpRrzu';
 var PC_HOST = 'numeo-reddit-d5h5qa8.svc.aped-4627-b74a.pinecone.io';
 
+function buildDataContext() {
+  var C = CONTEXT;
+  var parts = [];
+  parts.push('# DATASET: ' + C.total_posts + ' Reddit posts, ' + C.total_comments + ' comments from 9 US trucking subreddits\n');
+
+  parts.push('## TOPIC BREAKDOWN');
+  C.topics.forEach(function(t) {
+    parts.push('- **' + t.name.replace(/_/g,' ') + '**: ' + t.count + ' posts (' + t.pct + '%)');
+  });
+
+  parts.push('\n## TOP PAIN POINTS (exact complaints from users, with post counts)');
+  C.pain_points.forEach(function(p) {
+    var quoteParts = p.quotes.slice(0, 2).map(function(q) {
+      return '"' + q.quote.slice(0, 120) + '..." — r/' + q.sub + ' (' + q.url + ')';
+    });
+    parts.push('- **"' + p.pain + '"**: ' + p.count + ' posts');
+    quoteParts.forEach(function(qp) { parts.push('  - ' + qp); });
+  });
+
+  parts.push('\n## COMPETITOR MENTIONS');
+  C.competitors.forEach(function(c) {
+    parts.push('- **' + c.name + '**: ' + c.count + ' posts');
+  });
+
+  parts.push('\n## ROLES: ' + Object.entries(C.roles).map(function(e) { return e[0] + ': ' + e[1]; }).join(', '));
+
+  parts.push('\n## TOP ENGAGEMENT POSTS (highest upvoted posts in the dataset — use these for direct quotes)');
+  C.top_posts.forEach(function(p, i) {
+    parts.push('\n### Post ' + (i+1) + ': "' + p.title + '"');
+    parts.push('r/' + p.sub + ' | ' + p.score + ' upvotes | ' + p.comments + ' comments | role: ' + p.role);
+    parts.push('URL: ' + p.url);
+    parts.push('Topics: ' + p.topics.join(', '));
+    if (p.pains.length) parts.push('Pain points: ' + p.pains.join(', '));
+    if (p.body) parts.push('> ' + p.body);
+  });
+
+  return parts.join('\n');
+}
+
 async function runQuery() {
   var q = document.getElementById('queryInput').value.trim();
   if (!q) return;
   var btn = document.getElementById('queryBtn');
   var answerEl = document.getElementById('queryAnswer');
-  btn.disabled = true; btn.textContent = 'Analyzing...';
+  btn.disabled = true; btn.textContent = 'Analyzing ' + DATA.length + ' posts...';
   answerEl.style.display = 'block';
-  answerEl.textContent = 'Searching ' + DATA.length + ' posts...';
+  answerEl.innerHTML = '<p style="color:var(--muted)">Searching across ' + DATA.length + ' posts...</p>';
 
   try {
-    // 1. Build FULL dataset context from pre-computed context.json
-    var C = CONTEXT;
-    var fullContext = 'FULL DATASET: ' + C.total_posts + ' posts, ' + C.total_comments + ' comments from 9 trucking subreddits.\n\n';
-
-    fullContext += 'SUBREDDITS: ' + Object.entries(C.subreddits).map(function(e) { return 'r/' + e[0] + ' (' + e[1] + ')'; }).join(', ') + '\n\n';
-
-    fullContext += 'TOPIC BREAKDOWN (how many posts discuss each topic):\n';
-    C.topics.forEach(function(t) {
-      fullContext += '  - ' + t.name.replace(/_/g,' ') + ': ' + t.count + ' posts (' + t.pct + '%) — e.g. "' + t.examples[0].title + '" (r/' + t.examples[0].sub + ', ' + t.examples[0].score + ' upvotes)\n';
-    });
-
-    fullContext += '\nTOP SPECIFIC PAIN POINTS (extracted from post text — these are the actual complaints people write):\n';
-    C.pain_points.forEach(function(p) {
-      var ex = p.examples[0] || {};
-      fullContext += '  - "' + p.pain + '": mentioned in ' + p.count + ' posts — e.g. "' + (ex.title || '') + '" (' + (ex.url || '') + ')\n';
-    });
-
-    fullContext += '\nCOMPETITOR MENTIONS:\n';
-    C.competitors.forEach(function(c) {
-      fullContext += '  - ' + c.name + ': ' + c.count + ' posts\n';
-    });
-
-    fullContext += '\nROLES: ' + Object.entries(C.roles).map(function(e) { return e[0] + ': ' + e[1]; }).join(', ') + '\n';
-    fullContext += 'SENTIMENT: ' + Object.entries(C.sentiments).map(function(e) { return e[0] + ': ' + e[1]; }).join(', ') + '\n';
-
-    // 2. Pinecone semantic search for specific posts to quote
-    answerEl.textContent = 'Finding the most relevant posts to cite...';
+    // 1. Pinecone semantic search
     var searchRes = await fetch('https://' + PC_HOST + '/records/namespaces/posts/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Api-Key': PC_KEY },
@@ -383,46 +418,90 @@ async function runQuery() {
     var searchData = await searchRes.json();
     var hits = (searchData.result && searchData.result.hits ? searchData.result.hits : []);
 
-    // 3. Build quotable passages
-    var passages = hits.map(function(h, i) {
+    // 2. Build rich passages from search hits
+    var hitPosts = [];
+    hits.forEach(function(h, i) {
       var local = DATA.find(function(p) { return p.id === h._id; });
-      if (!local) return '';
-      var parts = ['[#' + (i+1) + '] r/' + local.sub + ' | ' + local.score + ' upvotes | ' + local.comments + ' comments'];
-      parts.push('Title: ' + local.title);
-      if (local.body) parts.push('Body: ' + local.body.slice(0, 600));
-      if (local.pains.length) parts.push('Pain points: ' + local.pains.join('; '));
-      if (local.competitors.length) parts.push('Competitors: ' + local.competitors.join(', '));
-      parts.push('URL: ' + local.url);
-      return parts.join('\n');
-    }).filter(function(p) { return p; }).join('\n\n---\n\n');
+      if (!local) return;
+      hitPosts.push({
+        num: i + 1,
+        title: local.title,
+        sub: local.sub,
+        score: local.score,
+        comments: local.comments,
+        url: local.url,
+        role: local.role || 'unknown',
+        body: (local.body || '').slice(0, 500),
+        pains: local.pains,
+        topics: local.topics,
+        competitors: local.competitors,
+      });
+    });
 
-    answerEl.textContent = 'Generating comprehensive analysis...';
+    var passageText = hitPosts.map(function(p) {
+      var lines = ['[Source #' + p.num + ']: "' + p.title + '"'];
+      lines.push('r/' + p.sub + ' | ' + p.score + ' upvotes | ' + p.comments + ' comments | role: ' + p.role);
+      lines.push('URL: ' + p.url);
+      if (p.body) lines.push('Content: ' + p.body);
+      if (p.pains.length) lines.push('Pain points: ' + p.pains.join('; '));
+      return lines.join('\n');
+    }).join('\n\n---\n\n');
 
-    // 4. Gemini 2.5 Flash — powerful model, CORS-enabled
+    answerEl.innerHTML = '<p style="color:var(--muted)">Generating comprehensive research analysis...</p>';
+
+    // 3. Build the full data context
+    var dataContext = buildDataContext();
+
+    // 4. Gemini with comprehensive prompt
     var systemPrompt = [
-      'You are a senior market research analyst who has personally read and analyzed ' + C.total_posts + ' Reddit posts from 9 US trucking communities.',
+      'You are a senior market research analyst presenting findings to the Numeo AI executive team.',
+      'You have analyzed ' + CONTEXT.total_posts + ' Reddit posts from 9 US trucking/logistics communities.',
       '',
-      'You work for Numeo AI, which builds:',
-      '- Spot Finder Pro: AI that scans load boards 24/7, finds best loads, and negotiates rates with brokers via email and phone',
-      '- Updater Agent: AI that automatically responds to broker check calls with load status/location updates',
-      '- VoiceFlow: AI voice agent that makes outbound calls to brokers to negotiate rates',
-      '- Numeo Lite: Free Chrome extension that adds AI features inside DAT/Truckstop load boards',
-      '- Numeo One: Full load lifecycle management (booking to delivery to document verification)',
+      'Numeo AI builds AI dispatch tools for small carriers (1-50 trucks) and independent dispatchers:',
+      '- Spot Finder Pro ($99-999/mo): AI scans load boards, finds best loads, negotiates rates via email and voice calls',
+      '- Updater Agent (free up to 5 trucks, then $20/truck): auto-responds to broker check calls with load status',
+      '- VoiceFlow: AI voice agent that calls brokers to negotiate rates',
+      '- Numeo Lite (free): Chrome extension adding AI features inside DAT/Truckstop load boards',
+      '- Numeo One: full load lifecycle management platform',
       '',
-      'Your audience: the growth team deciding what messages to use, which customers to target, and what features to build.',
+      'INSTRUCTIONS FOR YOUR RESPONSE:',
       '',
-      'HOW TO ANSWER:',
-      '- You have the COMPLETE statistical breakdown of all ' + C.total_posts + ' posts. Use it. Say things like "Out of ' + C.total_posts + ' posts, 427 discuss broker trust issues — that\'s 6.8% of all conversations."',
-      '- When someone asks about pain points, RANK them by how many posts mention each one. Use the exact counts from the data.',
-      '- Quote specific posts as evidence: "One owner-operator wrote: \'...\' [#3]"',
-      '- Be conversational but precise. Sound like a human analyst briefing the team, not a search engine.',
-      '- Give SPECIFIC, ACTIONABLE insights. Not "carriers have problems with brokers" but "38 carriers specifically complain about brokers not paying within 30 days, with amounts ranging from $5K to $140K."',
-      '- End with 2-3 concrete recommendations for Numeo.',
+      '1. COMPLETENESS: If asked for top 3, give ALL 3 in full depth. Never cut short. Each section should be thorough.',
       '',
-      'FORMAT: Use markdown headers (##), bold for emphasis, numbered lists for rankings. Keep it comprehensive but readable — aim for 400-600 words.',
+      '2. DATA-DRIVEN: You have the full statistical breakdown. For every claim, cite the exact count:',
+      '   "Out of ' + CONTEXT.total_posts + ' posts analyzed, 427 (6.8%) discuss broker trust issues."',
+      '',
+      '3. SPECIFIC QUOTES: For each major finding, include 2-3 direct quotes from actual Reddit users.',
+      '   Format as: > "quote text" — [Source title](URL)',
+      '',
+      '4. FORMATTING:',
+      '   - Use ## for major findings (numbered: "## 1. Finding Name")',
+      '   - Use **bold** for key numbers and emphasis',
+      '   - Use > blockquotes for user quotes',
+      '   - Use [link text](url) for all Reddit post references — never show raw URLs',
+      '   - Use bullet points for supporting details',
+      '',
+      '5. STRUCTURE each finding as:',
+      '   - What the problem is + how many posts mention it (with percentage)',
+      '   - 2-3 direct quotes from users (with links to their posts)',
+      '   - Why this matters for Numeo specifically',
+      '',
+      '6. END with a "## Recommendations for Numeo" section with 2-3 specific, actionable growth insights.',
+      '',
+      '7. TAKE YOUR TIME. Aim for 800-1200 words. Completeness and specificity matter more than brevity.',
     ].join('\n');
 
-    var userPrompt = q + '\n\n=== FULL DATASET STATISTICS ===\n' + fullContext + '\n\n=== MOST RELEVANT SPECIFIC POSTS (cite these as [#N]) ===\n' + passages;
+    var userPrompt = [
+      'QUESTION: ' + q,
+      '',
+      '=== FULL DATASET STATISTICS AND QUOTES ===',
+      dataContext,
+      '',
+      '=== SEMANTICALLY RELEVANT POSTS FOR THIS QUESTION ===',
+      passageText,
+      '',
+      'Answer comprehensively using both the aggregate statistics AND the specific posts. Cite sources with links.',
+    ].join('\n');
 
     var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_KEY;
     var geminiRes = await fetch(geminiUrl, {
@@ -431,7 +510,7 @@ async function runQuery() {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 3000 },
+        generationConfig: { temperature: 0.3, maxOutputTokens: 5000 },
       }),
     });
     var geminiData = await geminiRes.json();
@@ -439,18 +518,26 @@ async function runQuery() {
     if (geminiData.candidates && geminiData.candidates[0]) {
       answer = geminiData.candidates[0].content.parts.map(function(p) { return p.text; }).join('');
     } else {
-      answer = 'Error: ' + JSON.stringify(geminiData).slice(0, 500);
+      answerEl.textContent = 'Error: ' + JSON.stringify(geminiData).slice(0, 500);
+      return;
     }
 
-    // 5. Sources
-    var sourceLines = '\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSources (' + hits.length + ' posts cited)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
-    sourceLines += hits.map(function(h, i) {
-      var local = DATA.find(function(p) { return p.id === h._id; });
-      if (!local) return '';
-      return '[#' + (i+1) + '] r/' + local.sub + ' (' + local.score + ' pts, ' + local.comments + ' comments)\n    ' + local.title.slice(0, 80) + '\n    ' + local.url;
-    }).filter(function(s) { return s; }).join('\n\n');
+    // 5. Render markdown answer
+    var answerHtml = DOMPurify.sanitize(marked.parse(answer));
 
-    answerEl.textContent = answer + sourceLines;
+    // 6. Build clickable sources
+    var sourcesHtml = '<div class="sources-list"><h4>Sources (' + hitPosts.length + ' posts cited)</h4>';
+    hitPosts.forEach(function(p) {
+      sourcesHtml += '<div class="source-item">';
+      sourcesHtml += '<span class="source-num">[#' + p.num + ']</span>';
+      sourcesHtml += '<span class="source-meta">';
+      sourcesHtml += '<a href="' + DOMPurify.sanitize(p.url) + '" target="_blank">' + DOMPurify.sanitize(p.title.slice(0, 70)) + '</a>';
+      sourcesHtml += ' — r/' + DOMPurify.sanitize(p.sub) + ' · ' + p.score + ' pts · ' + p.comments + ' comments';
+      sourcesHtml += '</span></div>';
+    });
+    sourcesHtml += '</div>';
+
+    answerEl.innerHTML = answerHtml + sourcesHtml;
   } catch (e) {
     answerEl.textContent = 'Error: ' + e.message;
   } finally {
