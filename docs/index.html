@@ -153,7 +153,7 @@
 </div>
 
 <script>
-let DATA = [], STATS = {};
+let DATA = [], STATS = {}, CONTEXT = {};
 let displayedPosts = 0;
 const PAGE_SIZE = 100;
 
@@ -171,12 +171,14 @@ document.querySelectorAll('.tab').forEach(function(tab) {
 });
 
 async function init() {
-  const [dataRes, statsRes] = await Promise.all([
+  const [dataRes, statsRes, ctxRes] = await Promise.all([
     fetch('data.json').then(function(r) { return r.json(); }),
     fetch('stats.json').then(function(r) { return r.json(); }),
+    fetch('context.json').then(function(r) { return r.json(); }),
   ]);
   DATA = dataRes;
   STATS = statsRes;
+  CONTEXT = ctxRes;
   document.getElementById('headerMeta').textContent =
     STATS.total_posts.toLocaleString() + ' posts | ' + STATS.total_comments.toLocaleString() + ' comments | ' + Object.keys(STATS.subreddits).length + ' subreddits';
   renderDashboard();
@@ -336,44 +338,43 @@ var GEMINI_KEY = 'AIzaSyBb0h1ffC-eNaQCPf8WXUwkRFBFPVBbQSM';
 var PC_KEY = 'pcsk_5nAxxb_8QgC1Tez3L1nqjiEUb7fJEYTg6zgD687WW3hrQ5tNfeoum7yXh7PCGVr6rpRrzu';
 var PC_HOST = 'numeo-reddit-d5h5qa8.svc.aped-4627-b74a.pinecone.io';
 
-// Compute dataset-wide stats for the AI context
-function computeDataStats() {
-  var topicCounts = {}, painCounts = {}, compCounts = {}, roleCounts = {}, subCounts = {};
-  DATA.forEach(function(p) {
-    subCounts[p.sub] = (subCounts[p.sub] || 0) + 1;
-    roleCounts[p.role || 'unknown'] = (roleCounts[p.role || 'unknown'] || 0) + 1;
-    p.topics.forEach(function(t) { topicCounts[t] = (topicCounts[t] || 0) + 1; });
-    p.pains.forEach(function(pp) { painCounts[pp] = (painCounts[pp] || 0) + 1; });
-    p.competitors.forEach(function(c) { compCounts[c] = (compCounts[c] || 0) + 1; });
-  });
-  return { topicCounts: topicCounts, painCounts: painCounts, compCounts: compCounts, roleCounts: roleCounts, subCounts: subCounts };
-}
-
-function topN(obj, n) {
-  return Object.entries(obj).sort(function(a,b) { return b[1]-a[1]; }).slice(0, n).map(function(e) { return e[0] + ': ' + e[1] + ' posts'; }).join(', ');
-}
-
 async function runQuery() {
   var q = document.getElementById('queryInput').value.trim();
   if (!q) return;
   var btn = document.getElementById('queryBtn');
   var answerEl = document.getElementById('queryAnswer');
   btn.disabled = true; btn.textContent = 'Analyzing...';
-  answerEl.style.display = 'block'; answerEl.textContent = 'Step 1/3: Computing stats across all ' + DATA.length + ' posts...';
+  answerEl.style.display = 'block';
+  answerEl.textContent = 'Searching ' + DATA.length + ' posts...';
 
   try {
-    // 1. Compute full dataset stats (client-side, instant)
-    var stats = computeDataStats();
-    var statsContext = 'DATASET STATS (from ' + DATA.length + ' total posts across 9 trucking subreddits):\n';
-    statsContext += 'Top topics: ' + topN(stats.topicCounts, 18) + '\n';
-    statsContext += 'Top pain points: ' + topN(stats.painCounts, 30) + '\n';
-    statsContext += 'Top competitors mentioned: ' + topN(stats.compCounts, 15) + '\n';
-    statsContext += 'Roles: ' + topN(stats.roleCounts, 8) + '\n';
-    statsContext += 'Subreddits: ' + topN(stats.subCounts, 9) + '\n';
+    // 1. Build FULL dataset context from pre-computed context.json
+    var C = CONTEXT;
+    var fullContext = 'FULL DATASET: ' + C.total_posts + ' posts, ' + C.total_comments + ' comments from 9 trucking subreddits.\n\n';
 
-    answerEl.textContent = 'Step 2/3: Searching for most relevant posts via semantic search...';
+    fullContext += 'SUBREDDITS: ' + Object.entries(C.subreddits).map(function(e) { return 'r/' + e[0] + ' (' + e[1] + ')'; }).join(', ') + '\n\n';
 
-    // 2. Pinecone semantic search for specific relevant posts
+    fullContext += 'TOPIC BREAKDOWN (how many posts discuss each topic):\n';
+    C.topics.forEach(function(t) {
+      fullContext += '  - ' + t.name.replace(/_/g,' ') + ': ' + t.count + ' posts (' + t.pct + '%) — e.g. "' + t.examples[0].title + '" (r/' + t.examples[0].sub + ', ' + t.examples[0].score + ' upvotes)\n';
+    });
+
+    fullContext += '\nTOP SPECIFIC PAIN POINTS (extracted from post text — these are the actual complaints people write):\n';
+    C.pain_points.forEach(function(p) {
+      var ex = p.examples[0] || {};
+      fullContext += '  - "' + p.pain + '": mentioned in ' + p.count + ' posts — e.g. "' + (ex.title || '') + '" (' + (ex.url || '') + ')\n';
+    });
+
+    fullContext += '\nCOMPETITOR MENTIONS:\n';
+    C.competitors.forEach(function(c) {
+      fullContext += '  - ' + c.name + ': ' + c.count + ' posts\n';
+    });
+
+    fullContext += '\nROLES: ' + Object.entries(C.roles).map(function(e) { return e[0] + ': ' + e[1]; }).join(', ') + '\n';
+    fullContext += 'SENTIMENT: ' + Object.entries(C.sentiments).map(function(e) { return e[0] + ': ' + e[1]; }).join(', ') + '\n';
+
+    // 2. Pinecone semantic search for specific posts to quote
+    answerEl.textContent = 'Finding the most relevant posts to cite...';
     var searchRes = await fetch('https://' + PC_HOST + '/records/namespaces/posts/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Api-Key': PC_KEY },
@@ -382,35 +383,55 @@ async function runQuery() {
     var searchData = await searchRes.json();
     var hits = (searchData.result && searchData.result.hits ? searchData.result.hits : []);
 
-    // 3. Build rich passages from hits + local data
+    // 3. Build quotable passages
     var passages = hits.map(function(h, i) {
       var local = DATA.find(function(p) { return p.id === h._id; });
       if (!local) return '';
-      var parts = ['[#' + (i+1) + '] r/' + local.sub + ' | score: ' + local.score + ' | ' + local.comments + ' comments | role: ' + (local.role || 'unknown')];
+      var parts = ['[#' + (i+1) + '] r/' + local.sub + ' | ' + local.score + ' upvotes | ' + local.comments + ' comments'];
       parts.push('Title: ' + local.title);
-      if (local.body) parts.push('Body: ' + local.body.slice(0, 500));
-      if (local.pains.length) parts.push('Pain points: ' + local.pains.join(', '));
-      if (local.topics.length) parts.push('Topics: ' + local.topics.join(', '));
-      if (local.competitors.length) parts.push('Competitors mentioned: ' + local.competitors.join(', '));
+      if (local.body) parts.push('Body: ' + local.body.slice(0, 600));
+      if (local.pains.length) parts.push('Pain points: ' + local.pains.join('; '));
+      if (local.competitors.length) parts.push('Competitors: ' + local.competitors.join(', '));
       parts.push('URL: ' + local.url);
       return parts.join('\n');
     }).filter(function(p) { return p; }).join('\n\n---\n\n');
 
-    answerEl.textContent = 'Step 3/3: Generating comprehensive answer with Gemini...';
+    answerEl.textContent = 'Generating comprehensive analysis...';
 
-    // 4. Gemini synthesis with FULL context (stats + posts)
-    var systemPrompt = 'You are a senior market research analyst for Numeo AI, a company building AI-powered dispatch tools for US trucking (AI load finding, rate negotiation, auto check-call responses, voice AI for broker calls). Your audience is the Numeo growth team making product and GTM decisions.\n\nYou have access to two types of data:\n1. AGGREGATE STATS computed across the entire dataset of ' + DATA.length + ' Reddit posts from 9 trucking/logistics subreddits\n2. SPECIFIC POSTS that are most semantically relevant to the question\n\nRules for your answers:\n- Be COMPREHENSIVE and DATA-DRIVEN. Always cite exact numbers from the stats (e.g., "427 out of 6,247 posts mention broker trust issues (6.8%)").\n- When asked about pain points or topics, analyze the AGGREGATE DATA first to show the full picture, then use specific posts as evidence and quotes.\n- Cite specific posts as [#N] for evidence and direct quotes.\n- Structure your answer with clear headers and bullet points.\n- Include a "Key Takeaway for Numeo" section at the end with 2-3 actionable insights.\n- Be specific, not generic. Name exact tools, dollar amounts, and percentages when the data supports it.';
+    // 4. Gemini 2.5 Flash — powerful model, CORS-enabled
+    var systemPrompt = [
+      'You are a senior market research analyst who has personally read and analyzed ' + C.total_posts + ' Reddit posts from 9 US trucking communities.',
+      '',
+      'You work for Numeo AI, which builds:',
+      '- Spot Finder Pro: AI that scans load boards 24/7, finds best loads, and negotiates rates with brokers via email and phone',
+      '- Updater Agent: AI that automatically responds to broker check calls with load status/location updates',
+      '- VoiceFlow: AI voice agent that makes outbound calls to brokers to negotiate rates',
+      '- Numeo Lite: Free Chrome extension that adds AI features inside DAT/Truckstop load boards',
+      '- Numeo One: Full load lifecycle management (booking to delivery to document verification)',
+      '',
+      'Your audience: the growth team deciding what messages to use, which customers to target, and what features to build.',
+      '',
+      'HOW TO ANSWER:',
+      '- You have the COMPLETE statistical breakdown of all ' + C.total_posts + ' posts. Use it. Say things like "Out of ' + C.total_posts + ' posts, 427 discuss broker trust issues — that\'s 6.8% of all conversations."',
+      '- When someone asks about pain points, RANK them by how many posts mention each one. Use the exact counts from the data.',
+      '- Quote specific posts as evidence: "One owner-operator wrote: \'...\' [#3]"',
+      '- Be conversational but precise. Sound like a human analyst briefing the team, not a search engine.',
+      '- Give SPECIFIC, ACTIONABLE insights. Not "carriers have problems with brokers" but "38 carriers specifically complain about brokers not paying within 30 days, with amounts ranging from $5K to $140K."',
+      '- End with 2-3 concrete recommendations for Numeo.',
+      '',
+      'FORMAT: Use markdown headers (##), bold for emphasis, numbered lists for rankings. Keep it comprehensive but readable — aim for 400-600 words.',
+    ].join('\n');
 
-    var userPrompt = 'Question: ' + q + '\n\n' + statsContext + '\n\nMOST RELEVANT POSTS:\n' + passages + '\n\nProvide a comprehensive, data-driven answer. Use the aggregate stats for the big picture and cite specific posts [#N] as evidence. Include exact post counts and percentages.';
+    var userPrompt = q + '\n\n=== FULL DATASET STATISTICS ===\n' + fullContext + '\n\n=== MOST RELEVANT SPECIFIC POSTS (cite these as [#N]) ===\n' + passages;
 
-    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_KEY;
     var geminiRes = await fetch(geminiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 2000 },
+        generationConfig: { temperature: 0.3, maxOutputTokens: 3000 },
       }),
     });
     var geminiData = await geminiRes.json();
@@ -421,12 +442,13 @@ async function runQuery() {
       answer = 'Error: ' + JSON.stringify(geminiData).slice(0, 500);
     }
 
-    // 5. Format sources
-    var sourceLines = '\n\n━━━ Sources (' + hits.length + ' posts) ━━━\n' + hits.map(function(h, i) {
+    // 5. Sources
+    var sourceLines = '\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSources (' + hits.length + ' posts cited)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    sourceLines += hits.map(function(h, i) {
       var local = DATA.find(function(p) { return p.id === h._id; });
       if (!local) return '';
-      return '[#' + (i+1) + '] r/' + local.sub + ' | ' + local.score + 'pts | ' + local.title.slice(0, 65) + '\n     ' + local.url;
-    }).filter(function(s) { return s; }).join('\n');
+      return '[#' + (i+1) + '] r/' + local.sub + ' (' + local.score + ' pts, ' + local.comments + ' comments)\n    ' + local.title.slice(0, 80) + '\n    ' + local.url;
+    }).filter(function(s) { return s; }).join('\n\n');
 
     answerEl.textContent = answer + sourceLines;
   } catch (e) {
