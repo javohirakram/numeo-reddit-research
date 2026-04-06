@@ -1,39 +1,97 @@
 # Numeo Reddit Market Research
 
-**Automated Reddit intelligence pipeline for the Numeo growth team.**
+> Automated Reddit intelligence pipeline for the US trucking and logistics industry.
+> Built for the [Numeo AI](https://numeo.ai) growth team.
 
-Scrapes trucking and logistics subreddits, classifies posts with AI, and surfaces pain points, competitor mentions, and product opportunities — all queryable via CLI.
+**[View Live Dashboard](https://javohirakram.github.io/numeo-reddit-research/)**
 
-## Quick stats
+---
 
-| Metric | Value |
-|---|---|
-| Posts ingested | 852 |
-| Comments captured | 2,840 |
-| Posts classified | 851 |
-| Subreddits covered | 12 |
+## Dataset Overview
+
+| Metric | Count |
+|---|---:|
+| Total posts | 6,247 |
+| Total comments | 24,462 |
+| Posts classified | 6,247 (100%) |
+| Subreddits covered | 9 |
 | Classification model | GPT-4o-mini |
-| Vector index | Pinecone (`numeo-reddit`) |
+| Vector index | Pinecone (numeo-reddit) |
 
-## What it does
+### Subreddit Coverage
 
-1. **Scrapes** posts + top comments from 12 trucking/logistics subreddits (delta-aware — only fetches new content on re-runs)
-2. **Classifies** each post against a controlled taxonomy: author role, topics, pain points, competitor mentions, sentiment, and Numeo relevance score (0-5)
-3. **Stores** structured data in SQLite for stats, and vectors in Pinecone for semantic search
-4. **Answers** natural-language questions with citations back to Reddit threads
-5. **Reports** aggregated stats and a markdown market snapshot
+| Tier | Subreddit | Posts | Audience |
+|---|---|---:|---|
+| 1 | r/OwnerOperators | 999 | Owner-operators and small fleet owners (1-10 trucks) |
+| 1 | r/HotShotTrucking | 998 | Hot shot drivers and small fleet owners |
+| 1 | r/FreightBrokers | 969 | Freight brokers (counter-perspective) |
+| 1 | r/TruckDispatchers | 602 | Truck dispatchers (independent + in-house) |
+| 1 | r/HotshotStartup | 111 | New hot shot operators |
+| 1 | r/TruckingStartups | 98 | New carriers launching authority |
+| 2 | r/CDLTruckDrivers | 991 | CDL drivers (new and experienced) |
+| 2 | r/Truckers | 990 | Drivers (company + owner-operators) |
+| 2 | r/Truckdrivers | 489 | Truck drivers, CDL career discussions |
 
-## Key findings
+**Tier 1** = Direct ICP (dispatchers, O/Os, small carriers, brokers).
+**Tier 2** = High-volume driver communities (noisier, but volume compensates).
 
-- **#1 topic**: dispatch workflow (100 mentions) — load assignment chaos, tab overload, broker phone tag
-- **#1 competitor**: DAT (27 mentions) — universally used, universally frustrating
-- **#1 pain phrase**: *"loads gone in seconds"* — appears from multiple independent authors
-- **AI awareness**: near zero among actual operators — only SaaS founders mention AI dispatch tools
-- **Best engagement target**: r/TruckDispatchers (8,298 members, directly on-topic)
+---
 
-Full analysis: [`reports/Numeo_Reddit_Market_Research_Report.pdf`](reports/Numeo_Reddit_Market_Research_Report.pdf)
+## Key Findings
 
-## Setup
+### Top Topics (what people talk about most)
+
+| Topic | Mentions |
+|---|---:|
+| Market conditions | 756 |
+| Dispatch workflow | 550 |
+| Authority & compliance | 516 |
+| Broker trust & scams | 427 |
+| Load board frustration | 274 |
+| Driver recruiting & retention | 265 |
+| Rate negotiation | 246 |
+
+### Competitor Landscape (taxonomy-filtered)
+
+| Competitor | Mentions | Category |
+|---|---:|---|
+| DAT | 213 | Load board |
+| Truckstop | 81 | Load board |
+| Trucker Path | 35 | Load board/app |
+| Motive | 29 | ELD/Fleet management |
+| Sylectus | 26 | Legacy TMS |
+| Samsara | 24 | ELD/Fleet management |
+| Uber Freight | 17 | Digital brokerage |
+| TruckSmarter | 10 | AI competitor |
+| Cinesis | 4 | AI competitor |
+| Datatruck | 0 | AI competitor (closest threat) |
+| DispatchMVP | 0 | AI competitor |
+
+**Key insight**: AI-dispatch competitors have near-zero organic mindshare. Datatruck ($12M Series A, 100K daily users) and DispatchMVP have zero Reddit mentions. Market awareness of AI dispatch tools is essentially zero among actual operators.
+
+### Growth-Actionable Insights
+
+1. **"Loads gone in seconds"** appears from multiple independent authors -- use verbatim in ad copy
+2. **Broker check-call churn is hated on both sides** -- Updater Agent positioning validated
+3. **DAT is universally used but universally frustrating** -- position alongside, not against
+4. **AI awareness is near zero** -- education-first GTM, not "switch from X"
+5. **r/TruckDispatchers** (8,300 members) is the ideal community for authentic engagement
+
+---
+
+## Web Dashboard
+
+**Live at**: [javohirakram.github.io/numeo-reddit-research](https://javohirakram.github.io/numeo-reddit-research/)
+
+Features:
+- **Dashboard** -- stats cards, topic/competitor/pain point bar charts
+- **Browse Posts** -- filterable/searchable table of all 6,247 posts with classification data
+- **AI Query** -- semantic search via Pinecone + OpenAI synthesis with citations
+- **Settings** -- configure API keys, trigger new scrapes via GitHub Actions
+
+---
+
+## CLI Usage
 
 ```bash
 git clone https://github.com/javohirakram/numeo-reddit-research.git
@@ -43,54 +101,53 @@ pip install -e .
 cp .env.example .env   # fill in API keys
 ```
 
-### Required credentials
-
-| Key | Where to get it | Used for |
-|---|---|---|
-| `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com/api-keys) | Post classification (GPT-4o-mini) |
-| `PINECONE_API_KEY` | [app.pinecone.io](https://app.pinecone.io/) | Semantic search index |
-| `GOOGLE_API_KEY` *(optional)* | [aistudio.google.com](https://aistudio.google.com/app/apikey) | Alternative classifier (Gemini Flash) |
-
-Reddit data is fetched from public JSON endpoints — **no Reddit API app required**.
-
-## Usage
+### Commands
 
 ```bash
-# Ingest new posts from all configured subreddits
+# Scrape new posts (delta-aware, paginated)
 numeo-reddit ingest
 
-# Ingest a single subreddit (useful for testing)
-numeo-reddit ingest --only r/Truckers --limit 20
-
-# Classify all unclassified posts
+# Classify unclassified posts
 numeo-reddit classify
 
-# Ask a natural-language question (RAG with citations)
-numeo-reddit query "what are owner-operators saying about load boards?"
+# Semantic query with citations
+numeo-reddit query "what do dispatchers hate about check calls?"
 
-# View topic / role / competitor stats
+# Stats
 numeo-reddit stats topics --since 30d
 numeo-reddit stats roles --subreddit OwnerOperators
 numeo-reddit stats competitors --since 90d
 
-# Generate a full markdown report
+# Generate markdown report
 numeo-reddit report --out reports/market-snapshot.md
 ```
+
+### Required Credentials
+
+| Key | Source | Used for |
+|---|---|---|
+| `OPENAI_API_KEY` | [platform.openai.com](https://platform.openai.com/api-keys) | Classification (GPT-4o-mini) |
+| `PINECONE_API_KEY` | [app.pinecone.io](https://app.pinecone.io/) | Semantic search |
+| `GOOGLE_API_KEY` *(optional)* | [aistudio.google.com](https://aistudio.google.com/app/apikey) | Alternative classifier (Gemini) |
+
+No Reddit API app required -- posts are fetched via public JSON endpoints.
+
+---
 
 ## Architecture
 
 ```
-Reddit (public JSON)
+Reddit (public JSON, paginated)
   |
   v
-[reddit_client.py] -- fetch posts + comments, delta-aware
+[reddit_client.py] -- fetch posts + comments with pagination + retry/backoff
   |
   v
 [db.py] -- SQLite: posts, comments, classifications, ingest_state
   |
   v
-[classifier.py] -- GPT-4o-mini / Gemini / Claude (auto-detected)
-  |                 Structured output against controlled taxonomy
+[classifier.py] -- GPT-4o-mini / Gemini / Claude (auto-detected from model name)
+  |                 Structured JSON output against controlled taxonomy
   v
 [embedder.py] -- Pinecone integrated index (auto-embeds text)
   |
@@ -99,84 +156,87 @@ Reddit (public JSON)
 [stats.py] -- SQL aggregation + markdown report generation
 ```
 
-### Key design decisions
+### Design Decisions
 
-- **Two-store pattern**: SQLite for structured stats ("what % of posts are about X?"), Pinecone for semantic search ("what are people saying about X?"). Neither replaces the other.
-- **Controlled taxonomy** ([`config/taxonomy.yaml`](config/taxonomy.yaml)): 8 roles, 16 topics, 17+ competitors. Keeps stats consistent across runs — the LLM can only pick from this vocabulary.
-- **Delta ingestion**: `ingest_state` table tracks `last_post_utc` per subreddit. Re-runs only touch new content.
-- **Multi-provider classifier**: supports OpenAI, Google Gemini, and Anthropic. Swap by changing one env var.
-- **No Reddit API app needed**: uses public `.json` endpoints with a browser user-agent. Simpler setup, works on GitHub Actions runners.
+- **Two-store pattern**: SQLite for structured stats, Pinecone for semantic search
+- **Controlled taxonomy** (`config/taxonomy.yaml`): 8 roles, 18 topics, 25+ competitors -- keeps stats consistent across runs
+- **Paginated ingestion**: follows Reddit's `after` cursor past the 100-post cap, typically pulling 500-1000 posts per sub
+- **Delta-aware**: `ingest_state` table tracks `last_post_utc` per subreddit
+- **Multi-provider classifier**: supports OpenAI, Google Gemini, and Anthropic -- swap via `CLASSIFIER_MODEL` env var
+- **No Reddit API app needed**: uses public `.json` endpoints with browser user-agent
 
-## Subreddits covered
-
-| Subreddit | Posts | Audience | Signal quality |
-|---|---:|---|---|
-| r/FreightBrokers | 100 | Freight brokers | High |
-| r/OwnerOperators | 100 | Owner-operators, small fleets | High |
-| r/TruckDispatchers | 100 | Truck dispatchers | High |
-| r/Truckers | 100 | Drivers (company + O/O) | Medium |
-| r/HotShotTrucking | 80 | Hot shot drivers | Medium |
-| r/HotshotStartup | 80 | New hot shot operators | Medium |
-| r/TruckingStartups | 80 | New carriers | High |
-| r/logistics | 60 | Logistics professionals | Low |
-| r/supplychain | 60 | Supply chain professionals | Low |
-| r/smallbusiness | 40 | Small business owners | Low |
-| r/SaaS | 40 | SaaS founders | Low |
-
-Configured in [`config/subreddits.yaml`](config/subreddits.yaml). Add or remove subs there.
+---
 
 ## Reports
 
 | File | Description |
 |---|---|
-| [`Numeo_Reddit_Market_Research_Report.pdf`](reports/Numeo_Reddit_Market_Research_Report.pdf) | Full research report with all findings, stats, and post index |
-| [`market-snapshot.md`](reports/market-snapshot.md) | Auto-generated stats dashboard (regenerated with `numeo-reddit report`) |
-| [`first-run-notes.md`](reports/first-run-notes.md) | Detailed findings with actionable growth recommendations |
+| [Numeo_Reddit_Market_Research_Report.html](reports/Numeo_Reddit_Market_Research_Report.html) | Full research report (styled HTML, print to PDF) |
+| [comprehensive-research-report.md](reports/comprehensive-research-report.md) | Same content as markdown |
+| [market-snapshot.md](reports/market-snapshot.md) | Auto-generated stats dashboard |
+| [first-run-notes.md](reports/first-run-notes.md) | Detailed findings with growth recommendations |
 
-## Scheduling (GitHub Actions)
+---
 
-A daily cron workflow at [`.github/workflows/ingest.yml`](.github/workflows/ingest.yml) runs:
-
-1. `numeo-reddit ingest` — fetch new posts
-2. `numeo-reddit classify` — classify new posts
-3. `numeo-reddit report` — regenerate market snapshot
-4. Commits updated `data/reddit.db` + `reports/` back to the repo
-
-Add your API keys as GitHub repo secrets to enable: `OPENAI_API_KEY`, `PINECONE_API_KEY`, `REDDIT_USER_AGENT`.
-
-## Project structure
+## Project Structure
 
 ```
 numeo-reddit-research/
 ├── config/
-│   ├── subreddits.yaml          # which subs to scrape + limits
-│   └── taxonomy.yaml            # controlled vocab: roles, topics, competitors
+│   ├── subreddits.yaml          # 9 validated subreddits with tier labels
+│   └── taxonomy.yaml            # 8 roles, 18 topics, 25+ competitors
 ├── src/numeo_reddit/
-│   ├── cli.py                   # typer CLI entry points
-│   ├── reddit_client.py         # fetch via public JSON (no API app needed)
+│   ├── cli.py                   # typer CLI (ingest, classify, query, stats, report)
+│   ├── reddit_client.py         # paginated fetch via public JSON + retry/backoff
 │   ├── db.py                    # SQLite schema + CRUD
 │   ├── classifier.py            # multi-provider LLM classification
-│   ├── classify_batch.py        # batch runner with rate limiting
+│   ├── classify_batch.py        # batch runner with rate limiting + retry
 │   ├── embedder.py              # Pinecone upsert + search
 │   ├── ingest.py                # orchestrator: fetch -> db -> classify -> pinecone
-│   ├── query.py                 # RAG answer with citations
+│   ├── query.py                 # RAG with citations
 │   ├── stats.py                 # SQL stats + markdown report
-│   └── taxonomy.py              # loads config/taxonomy.yaml
+│   └── taxonomy.py              # loads controlled vocabulary
 ├── scripts/
-│   └── bootstrap_pinecone.py    # one-time: create Pinecone index
+│   └── bootstrap_pinecone.py    # one-time index creation
 ├── data/
-│   └── reddit.db                # SQLite database (852 posts, 2840 comments)
-├── reports/
-│   ├── Numeo_Reddit_Market_Research_Report.pdf
-│   ├── market-snapshot.md
-│   └── first-run-notes.md
+│   └── reddit.db                # SQLite (6,247 posts, 24,462 comments)
+├── docs/
+│   ├── index.html               # GitHub Pages web dashboard
+│   ├── data.json                # exported dataset for the dashboard
+│   └── stats.json               # pre-computed stats
+├── reports/                     # generated research reports
 ├── .github/workflows/
-│   └── ingest.yml               # daily scheduled ingest
+│   └── ingest.yml               # daily scheduled ingest + classify
 ├── .env.example
 ├── .gitignore
 └── pyproject.toml
 ```
 
-## License
+---
 
-Proprietary — Numeo internal use.
+## Scheduling
+
+A daily GitHub Actions workflow (`.github/workflows/ingest.yml`) runs:
+
+1. `numeo-reddit ingest` -- fetch new posts
+2. `numeo-reddit classify` -- classify via GPT-4o-mini
+3. `numeo-reddit report` -- regenerate market snapshot
+4. Commits updated `data/reddit.db` + `reports/` back to the repo
+
+Add API keys as GitHub repo secrets: `OPENAI_API_KEY`, `PINECONE_API_KEY`.
+
+---
+
+## Taxonomy
+
+The classification taxonomy is defined in `config/taxonomy.yaml` and includes:
+
+**Roles**: owner_operator, company_driver, carrier_owner, dispatcher, freight_broker, shipper, logistics_tech, unknown
+
+**Topics** (18): load_board_frustration, rate_negotiation, broker_trust_and_scams, dispatch_workflow, check_calls_and_updates, tms_and_software, market_conditions, fuel_costs, factoring_and_cashflow, insurance_and_claims, authority_and_compliance, eld_and_hos, safety_and_inspections, driver_recruiting_and_retention, maintenance_and_repairs, detention_and_dwell, backhaul_and_deadhead, document_and_paperwork
+
+**Competitors** (25+): Datatruck, TruckSmarter, Cinesis, DispatchMVP, PCS Cortex, DAT, Truckstop, 123Loadboard, Uber Freight, Trucker Path, Parade, Samsara, Motive, Geotab, Omnitracs, HappyRobot, Vooma, FleetWorks, McLeod, TruckingOffice, ProTransport, Axon, Sylectus
+
+---
+
+*Built by the Numeo AI growth team. April 2026.*

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Numeo Reddit Research</title>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+<style>
+  :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --green: #3fb950; --red: #f85149; --yellow: #d29922; --purple: #bc8cff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .header h1 span { color: var(--accent); }
+  .header .meta { color: var(--muted); font-size: 13px; }
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab { padding: 8px 16px; cursor: pointer; color: var(--muted); font-size: 14px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .bar-chart { margin: 16px 0; }
+  .bar-row { display: flex; align-items: center; margin: 4px 0; font-size: 13px; }
+  .bar-label { width: 220px; text-align: right; padding-right: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-fill { height: 20px; background: var(--accent); border-radius: 3px; min-width: 2px; transition: width 0.5s; }
+  .bar-value { padding-left: 8px; font-size: 12px; color: var(--muted); min-width: 40px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: var(--surface); color: var(--muted); font-weight: 600; position: sticky; top: 0; z-index: 1; }
+  tr:hover { background: rgba(88, 166, 255, 0.05); }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  .controls { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  input, select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+  input { flex: 1; min-width: 200px; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  select { min-width: 140px; }
+  .query-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .query-input { display: flex; gap: 8px; }
+  .query-input input { flex: 1; font-size: 15px; padding: 10px 14px; }
+  button { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+  .answer { margin-top: 16px; padding: 16px; background: rgba(88,166,255,0.05); border-radius: 6px; border-left: 3px solid var(--accent); white-space: pre-wrap; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+  .badge-pos { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-neg { background: rgba(248,81,73,0.15); color: var(--red); }
+  .badge-neu { background: rgba(139,148,158,0.15); color: var(--muted); }
+  .badge-rel { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .section-header { font-size: 16px; font-weight: 600; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .table-wrap { max-height: 600px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
+  .settings-grid { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; align-items: center; font-size: 13px; }
+  .settings-grid label { color: var(--muted); }
+  .settings-grid input { width: 100%; }
+  .warning { background: rgba(210,153,34,0.15); border: 1px solid var(--yellow); border-radius: 6px; padding: 12px; margin: 12px 0; font-size: 13px; color: var(--yellow); }
+  .count { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1><span>Numeo</span> Reddit Research</h1>
+    <div class="meta" id="headerMeta">Loading...</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="dashboard">Dashboard</div>
+    <div class="tab" data-tab="posts">Browse Posts</div>
+    <div class="tab" data-tab="query">AI Query</div>
+    <div class="tab" data-tab="settings">Settings</div>
+  </div>
+
+  <div id="dashboard" class="tab-content active">
+    <div class="stats-grid" id="statsCards"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div><div class="section-header">Top Topics</div><div id="topicsChart" class="bar-chart"></div></div>
+      <div><div class="section-header">Competitor Mentions</div><div id="competitorsChart" class="bar-chart"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px;">
+      <div><div class="section-header">Subreddit Coverage</div><div id="subsChart" class="bar-chart"></div></div>
+      <div><div class="section-header">Top Pain Points</div><div id="painsChart" class="bar-chart"></div></div>
+    </div>
+  </div>
+
+  <div id="posts" class="tab-content">
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Search posts...">
+      <select id="subFilter"><option value="">All subreddits</option></select>
+      <select id="roleFilter"><option value="">All roles</option></select>
+      <select id="sentFilter"><option value="">All sentiments</option></select>
+      <select id="relFilter"><option value="">All relevance</option><option value="5">5 - Exact fit</option><option value="4">4+ High</option><option value="3">3+ Medium</option></select>
+      <select id="sortBy"><option value="ts">Newest</option><option value="score">Top score</option><option value="relevance">Most relevant</option><option value="comments">Most discussed</option></select>
+    </div>
+    <div class="count" id="postCount"></div>
+    <div class="table-wrap"><table><thead><tr><th>Sub</th><th>Title</th><th>Role</th><th>Topics</th><th>Sent.</th><th>Rel.</th><th>Score</th></tr></thead><tbody id="postsBody"></tbody></table></div>
+    <div style="text-align:center;margin-top:12px;"><button class="secondary" id="loadMore">Load more</button></div>
+  </div>
+
+  <div id="query" class="tab-content">
+    <div class="query-box">
+      <p style="margin-bottom:12px;color:var(--muted);font-size:13px;">Ask any question about the dataset. Uses Pinecone semantic search + OpenAI synthesis.</p>
+      <div class="query-input">
+        <input type="text" id="queryInput" placeholder="e.g. What do dispatchers hate most about check calls?">
+        <button id="queryBtn">Search</button>
+      </div>
+      <div id="queryAnswer" style="display:none;" class="answer"></div>
+    </div>
+    <div class="section-header">Quick queries</div>
+    <div id="quickQueries" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+  </div>
+
+  <div id="settings" class="tab-content">
+    <div class="section-header">API Keys</div>
+    <div class="warning">API keys are stored in your browser's localStorage only. They are never sent to any server except the respective API providers.</div>
+    <div class="settings-grid">
+      <label>OpenAI Key</label><input type="password" id="openaiKey" placeholder="sk-...">
+      <label>Pinecone Key</label><input type="password" id="pineconeKey" placeholder="pcsk_...">
+      <label>Pinecone Host</label><input type="text" id="pineconeHost" placeholder="numeo-reddit-xxxxx.svc.xxx.pinecone.io">
+    </div>
+    <div style="margin-top:12px;"><button id="saveSettingsBtn">Save settings</button></div>
+    <div class="section-header" style="margin-top:32px;">Trigger New Scrape</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Triggers the GitHub Actions ingest workflow. Requires a GitHub personal access token with repo scope.</p>
+    <div class="settings-grid">
+      <label>GitHub Token</label><input type="password" id="ghToken" placeholder="ghp_...">
+    </div>
+    <div style="margin-top:12px;"><button id="triggerScrapeBtn">Run new scrape</button><span id="scrapeStatus" style="margin-left:12px;color:var(--muted);font-size:13px;"></span></div>
+  </div>
+</div>
+
+<script>
+let DATA = [], STATS = {};
+let displayedPosts = 0;
+const PAGE_SIZE = 100;
+
+// Safe text helper
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+async function init() {
+  const [dataRes, statsRes] = await Promise.all([
+    fetch('data.json').then(function(r) { return r.json(); }),
+    fetch('stats.json').then(function(r) { return r.json(); }),
+  ]);
+  DATA = dataRes;
+  STATS = statsRes;
+  document.getElementById('headerMeta').textContent =
+    STATS.total_posts.toLocaleString() + ' posts | ' + STATS.total_comments.toLocaleString() + ' comments | ' + Object.keys(STATS.subreddits).length + ' subreddits';
+  renderDashboard();
+  populateFilters();
+  renderPosts();
+  loadSettings();
+  setupQuickQueries();
+  setupEventListeners();
+}
+
+function renderDashboard() {
+  var cards = [
+    { value: STATS.total_posts.toLocaleString(), label: 'Total posts' },
+    { value: STATS.total_comments.toLocaleString(), label: 'Total comments' },
+    { value: Object.keys(STATS.subreddits).length, label: 'Subreddits' },
+    { value: Object.values(STATS.competitors).reduce(function(a,b){return a+b;}, 0), label: 'Competitor mentions' },
+  ];
+  var el = document.getElementById('statsCards');
+  el.textContent = '';
+  cards.forEach(function(c) {
+    var card = document.createElement('div'); card.className = 'stat-card';
+    var v = document.createElement('div'); v.className = 'value'; v.textContent = c.value;
+    var l = document.createElement('div'); l.className = 'label'; l.textContent = c.label;
+    card.appendChild(v); card.appendChild(l); el.appendChild(card);
+  });
+  renderBarChart('topicsChart', STATS.topics, 15);
+  renderBarChart('competitorsChart', STATS.competitors, 15);
+  renderBarChart('subsChart', STATS.subreddits, 15);
+  renderBarChart('painsChart', STATS.top_pains, 15);
+}
+
+function renderBarChart(id, data, limit) {
+  var entries = Object.entries(data).slice(0, limit);
+  var max = Math.max.apply(null, entries.map(function(e) { return e[1]; }));
+  var container = document.getElementById(id);
+  container.textContent = '';
+  entries.forEach(function(entry) {
+    var k = entry[0], v = entry[1];
+    var pct = (v / max * 100).toFixed(0);
+    var row = document.createElement('div'); row.className = 'bar-row';
+    var label = document.createElement('div'); label.className = 'bar-label'; label.textContent = k.replace(/_/g, ' '); label.title = k;
+    var fill = document.createElement('div'); fill.className = 'bar-fill'; fill.style.width = pct + '%';
+    var val = document.createElement('div'); val.className = 'bar-value'; val.textContent = v;
+    row.appendChild(label); row.appendChild(fill); row.appendChild(val); container.appendChild(row);
+  });
+}
+
+function populateFilters() {
+  var subSel = document.getElementById('subFilter');
+  Object.keys(STATS.subreddits).forEach(function(s) {
+    var opt = document.createElement('option'); opt.value = s; opt.textContent = 'r/' + s + ' (' + STATS.subreddits[s] + ')';
+    subSel.appendChild(opt);
+  });
+  var roleSel = document.getElementById('roleFilter');
+  Object.keys(STATS.roles).forEach(function(r) {
+    var opt = document.createElement('option'); opt.value = r; opt.textContent = r + ' (' + STATS.roles[r] + ')';
+    roleSel.appendChild(opt);
+  });
+}
+
+function setupEventListeners() {
+  ['subFilter', 'roleFilter', 'sentFilter', 'relFilter', 'sortBy'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', function() { displayedPosts = 0; renderPosts(); });
+  });
+  var searchTimer;
+  document.getElementById('searchInput').addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function() { displayedPosts = 0; renderPosts(); }, 300);
+  });
+  document.getElementById('loadMore').addEventListener('click', loadMorePosts);
+  document.getElementById('queryBtn').addEventListener('click', runQuery);
+  document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+  document.getElementById('triggerScrapeBtn').addEventListener('click', triggerScrape);
+  document.getElementById('queryInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') runQuery(); });
+}
+
+function setupQuickQueries() {
+  var queries = [
+    'What are the top pain points for owner-operators?',
+    'What do people say about DAT load board?',
+    'How do dispatchers feel about AI automation?',
+    'What TMS complaints come up most often?',
+    'What are the biggest issues with broker trust?',
+  ];
+  var container = document.getElementById('quickQueries');
+  queries.forEach(function(q) {
+    var btn = document.createElement('button');
+    btn.className = 'secondary';
+    btn.textContent = q.length > 40 ? q.slice(0, 37) + '...' : q;
+    btn.title = q;
+    btn.addEventListener('click', function() { quickQuery(q); });
+    container.appendChild(btn);
+  });
+}
+
+function getFilteredPosts() {
+  var search = document.getElementById('searchInput').value.toLowerCase();
+  var sub = document.getElementById('subFilter').value;
+  var role = document.getElementById('roleFilter').value;
+  var sent = document.getElementById('sentFilter').value;
+  var rel = document.getElementById('relFilter').value;
+  var sort = document.getElementById('sortBy').value;
+  var filtered = DATA.filter(function(p) {
+    if (sub && p.sub !== sub) return false;
+    if (role && p.role !== role) return false;
+    if (sent && p.sentiment !== sent) return false;
+    if (rel && p.relevance < parseInt(rel)) return false;
+    if (search && p.title.toLowerCase().indexOf(search) === -1 && (p.body||'').toLowerCase().indexOf(search) === -1) return false;
+    return true;
+  });
+  filtered.sort(function(a, b) {
+    if (sort === 'score') return b.score - a.score;
+    if (sort === 'relevance') return b.relevance - a.relevance;
+    if (sort === 'comments') return b.comments - a.comments;
+    return b.ts - a.ts;
+  });
+  return filtered;
+}
+
+function sentBadge(s) {
+  if (s === 'positive') return '<span class="badge badge-pos">+</span>';
+  if (s === 'negative') return '<span class="badge badge-neg">-</span>';
+  return '<span class="badge badge-neu">~</span>';
+}
+
+function renderPosts() {
+  var filtered = getFilteredPosts();
+  var slice = filtered.slice(0, displayedPosts + PAGE_SIZE);
+  displayedPosts = slice.length;
+  document.getElementById('postCount').textContent = 'Showing ' + slice.length + ' of ' + filtered.length + ' posts';
+  var tbody = document.getElementById('postsBody');
+  tbody.textContent = '';
+  slice.forEach(function(p) {
+    var tr = document.createElement('tr');
+    var tdSub = document.createElement('td'); tdSub.style.whiteSpace = 'nowrap'; tdSub.style.fontSize = '12px'; tdSub.textContent = 'r/' + p.sub;
+    var tdTitle = document.createElement('td'); var a = document.createElement('a'); a.href = p.url; a.target = '_blank'; a.title = p.title; a.textContent = p.title.length > 70 ? p.title.slice(0,70) + '...' : p.title; tdTitle.appendChild(a);
+    var tdRole = document.createElement('td'); tdRole.style.fontSize = '12px'; tdRole.textContent = p.role || '?';
+    var tdTopics = document.createElement('td'); tdTopics.style.fontSize = '11px'; tdTopics.style.color = 'var(--muted)'; tdTopics.textContent = p.topics.slice(0,2).map(function(t){return t.replace(/_/g,' ');}).join(', ');
+    var tdSent = document.createElement('td'); tdSent.innerHTML = DOMPurify.sanitize(sentBadge(p.sentiment));
+    var tdRel = document.createElement('td'); if (p.relevance >= 4) { tdRel.innerHTML = DOMPurify.sanitize('<span class="badge badge-rel">' + p.relevance + '</span>'); } else { tdRel.textContent = p.relevance; }
+    var tdScore = document.createElement('td'); tdScore.textContent = p.score;
+    tr.appendChild(tdSub); tr.appendChild(tdTitle); tr.appendChild(tdRole); tr.appendChild(tdTopics); tr.appendChild(tdSent); tr.appendChild(tdRel); tr.appendChild(tdScore);
+    tbody.appendChild(tr);
+  });
+  document.getElementById('loadMore').style.display = slice.length < filtered.length ? '' : 'none';
+}
+
+function loadMorePosts() { renderPosts(); }
+
+async function runQuery() {
+  var q = document.getElementById('queryInput').value.trim();
+  if (!q) return;
+  var openaiKey = localStorage.getItem('openai_key');
+  var pineconeKey = localStorage.getItem('pinecone_key');
+  var pineconeHost = localStorage.getItem('pinecone_host');
+  var answerEl = document.getElementById('queryAnswer');
+  if (!openaiKey || !pineconeKey || !pineconeHost) { answerEl.style.display = 'block'; answerEl.textContent = 'Please set your API keys in the Settings tab first.'; return; }
+  var btn = document.getElementById('queryBtn');
+  btn.disabled = true; btn.textContent = 'Searching...';
+  answerEl.style.display = 'block'; answerEl.textContent = 'Searching Pinecone + synthesizing answer...';
+  try {
+    var searchRes = await fetch('https://' + pineconeHost + '/records/namespaces/posts/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Api-Key': pineconeKey },
+      body: JSON.stringify({ query: { inputs: { text: q }, top_k: 10 } }),
+    });
+    var searchData = await searchRes.json();
+    var hits = (searchData.result && searchData.result.hits ? searchData.result.hits : []).slice(0, 10);
+    var passages = hits.map(function(h, i) {
+      var local = DATA.find(function(p) { return p.id === h._id; });
+      var title = local ? local.title : ''; var body = local ? local.body : '';
+      var sub = local ? local.sub : ''; var url = local ? local.url : '';
+      return '[#' + (i+1) + '] r/' + sub + ' -- ' + title + '\n' + body + '\nURL: ' + url;
+    }).join('\n\n---\n\n');
+    var llmRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaiKey },
+      body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.3, messages: [
+        { role: 'system', content: 'You are a market research analyst for Numeo AI. Answer based on the Reddit posts provided. Cite sources as [#N]. Be concise and insightful.' },
+        { role: 'user', content: 'Question: ' + q + '\n\nPassages:\n' + passages + '\n\nAnswer using ONLY these passages. Cite with [#N].' },
+      ]}),
+    });
+    var llmData = await llmRes.json();
+    var answer = (llmData.choices && llmData.choices[0] && llmData.choices[0].message) ? llmData.choices[0].message.content : 'No answer generated.';
+    var sources = hits.map(function(h, i) {
+      var local = DATA.find(function(p) { return p.id === h._id; });
+      return '[#' + (i+1) + '] r/' + (local ? local.sub : '?') + ' -- ' + (local ? local.title : '').slice(0,60) + ' (' + (local ? local.url : '') + ')';
+    }).join('\n');
+    answerEl.textContent = answer + '\n\n--- Sources ---\n' + sources;
+  } catch (e) { answerEl.textContent = 'Error: ' + e.message; }
+  finally { btn.disabled = false; btn.textContent = 'Search'; }
+}
+
+function quickQuery(q) {
+  document.getElementById('queryInput').value = q;
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+  document.querySelector('[data-tab="query"]').classList.add('active');
+  document.getElementById('query').classList.add('active');
+  runQuery();
+}
+
+function saveSettings() {
+  localStorage.setItem('openai_key', document.getElementById('openaiKey').value);
+  localStorage.setItem('pinecone_key', document.getElementById('pineconeKey').value);
+  localStorage.setItem('pinecone_host', document.getElementById('pineconeHost').value);
+  localStorage.setItem('gh_token', document.getElementById('ghToken').value);
+  alert('Settings saved to browser localStorage.');
+}
+
+function loadSettings() {
+  document.getElementById('openaiKey').value = localStorage.getItem('openai_key') || '';
+  document.getElementById('pineconeKey').value = localStorage.getItem('pinecone_key') || '';
+  document.getElementById('pineconeHost').value = localStorage.getItem('pinecone_host') || '';
+  document.getElementById('ghToken').value = localStorage.getItem('gh_token') || '';
+}
+
+async function triggerScrape() {
+  var token = localStorage.getItem('gh_token');
+  var status = document.getElementById('scrapeStatus');
+  if (!token) { status.textContent = 'Set GitHub token first'; return; }
+  status.textContent = 'Triggering...';
+  try {
+    var res = await fetch('https://api.github.com/repos/javohirakram/numeo-reddit-research/actions/workflows/ingest.yml/dispatches', {
+      method: 'POST', headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' },
+      body: JSON.stringify({ ref: 'main' }),
+    });
+    status.textContent = res.ok ? 'Triggered! Check GitHub Actions.' : 'Failed: ' + res.status;
+  } catch (e) { status.textContent = 'Error: ' + e.message; }
+}
+
+init();
+</script>
+</body>
+</html>
