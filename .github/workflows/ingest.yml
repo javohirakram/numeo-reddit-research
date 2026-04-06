@@ -28,22 +28,22 @@ jobs:
 
       - name: Run ingest
         env:
-          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
-          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
-          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
           PINECONE_INDEX: numeo-reddit
-        run: numeo-reddit ingest
+        run: numeo-reddit ingest --skip-classify
+
+      - name: Classify new posts
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_INDEX: numeo-reddit
+          CLASSIFIER_MODEL: gpt-4o-mini
+        run: numeo-reddit classify
 
       - name: Generate fresh market snapshot
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: numeo-reddit report --out reports/market-snapshot.md --since 30d
 
       - name: Commit updated data
-        env:
-          TODAY: ${{ github.run_started_at }}
         run: |
           git config user.name  "numeo-bot"
           git config user.email "numeo-bot@users.noreply.github.com"
