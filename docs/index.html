@@ -104,16 +104,26 @@
 
   <div id="query" class="tab-content">
     <div class="query-box">
-      <p style="margin-bottom:12px;color:var(--muted);font-size:13px;">Search 6,247 trucking Reddit posts instantly. Matches keywords across titles, body text, pain points, and topics.</p>
+      <p style="margin-bottom:12px;color:var(--muted);font-size:13px;">Ask any question in natural language. AI searches 6,247 Reddit posts semantically and synthesizes an answer with citations.</p>
       <div class="query-input">
-        <input type="text" id="queryInput" placeholder="e.g. DAT load board frustration, check calls, TMS complaints, insurance cost...">
-        <button id="queryBtn">Search</button>
+        <input type="text" id="queryInput" placeholder="e.g. What do owner-operators hate most about load boards?">
+        <button id="queryBtn">Ask AI</button>
       </div>
+      <div id="queryAnswer" style="display:none;" class="answer"></div>
     </div>
     <div id="quickQueries" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px;"></div>
     <div id="queryResults" style="display:none;">
       <div class="count" id="queryCount"></div>
       <div id="queryCards"></div>
+    </div>
+    <div class="section-header" style="margin-top:24px;">Keyword Search</div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <input type="text" id="kwSearchInput" placeholder="Keyword search (e.g. DAT, check calls, insurance)...">
+      <button id="kwSearchBtn" class="secondary">Search</button>
+    </div>
+    <div id="kwResults" style="display:none;margin-top:16px;">
+      <div class="count" id="kwCount"></div>
+      <div id="kwCards"></div>
     </div>
   </div>
 
@@ -238,23 +248,23 @@ function setupEventListeners() {
   });
   document.getElementById('loadMore').addEventListener('click', loadMorePosts);
   document.getElementById('queryBtn').addEventListener('click', runQuery);
+  document.getElementById('queryInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') runQuery(); });
+  document.getElementById('kwSearchBtn').addEventListener('click', runKeywordSearch);
+  document.getElementById('kwSearchInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') runKeywordSearch(); });
   document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
   document.getElementById('triggerScrapeBtn').addEventListener('click', triggerScrape);
-  document.getElementById('queryInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') runQuery(); });
 }
 
 function setupQuickQueries() {
   var queries = [
-    'DAT load board',
-    'check calls broker',
-    'dispatcher workflow',
-    'rate negotiation lowball',
-    'TMS software complaints',
-    'insurance cost',
-    'Samsara Motive camera',
-    'factoring cashflow payment',
-    'authority compliance new carrier',
-    'double broker scam',
+    'What are the biggest pain points for owner-operators?',
+    'What do people say about DAT load board?',
+    'How do dispatchers feel about AI and automation?',
+    'What TMS complaints come up most often?',
+    'What are the biggest broker trust issues?',
+    'What do carriers say about Samsara and Motive cameras?',
+    'How do new carriers struggle with authority and compliance?',
+    'What is the sentiment around current freight rates?',
   ];
   var container = document.getElementById('quickQueries');
   queries.forEach(function(q) {
@@ -321,8 +331,80 @@ function renderPosts() {
 
 function loadMorePosts() { renderPosts(); }
 
-function runQuery() {
-  var q = document.getElementById('queryInput').value.trim().toLowerCase();
+// API keys for browser-direct calls (Gemini + Pinecone both support CORS)
+var GEMINI_KEY = 'AIzaSyCL8rj579d02VKFCjrlGKMlYqKXab9RNSQ';
+var PC_KEY = 'pcsk_5nAxxb_8QgC1Tez3L1nqjiEUb7fJEYTg6zgD687WW3hrQ5tNfeoum7yXh7PCGVr6rpRrzu';
+var PC_HOST = 'numeo-reddit-d5h5qa8.svc.aped-4627-b74a.pinecone.io';
+
+async function runQuery() {
+  var q = document.getElementById('queryInput').value.trim();
+  if (!q) return;
+  var btn = document.getElementById('queryBtn');
+  var answerEl = document.getElementById('queryAnswer');
+  btn.disabled = true; btn.textContent = 'Thinking...';
+  answerEl.style.display = 'block'; answerEl.textContent = 'Searching across 6,247 posts...';
+
+  try {
+    // 1. Pinecone semantic search (CORS-enabled)
+    var searchRes = await fetch('https://' + PC_HOST + '/records/namespaces/posts/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Api-Key': PC_KEY },
+      body: JSON.stringify({ query: { inputs: { text: q }, top_k: 12 } }),
+    });
+    var searchData = await searchRes.json();
+    var hits = (searchData.result && searchData.result.hits ? searchData.result.hits : []);
+
+    if (hits.length === 0) { answerEl.textContent = 'No results found. Try different phrasing.'; return; }
+
+    // 2. Build passages from hits + local data
+    var passages = hits.map(function(h, i) {
+      var local = DATA.find(function(p) { return p.id === h._id; });
+      var f = h.fields || {};
+      var title = local ? local.title : (f.chunk_text || '').split('\n')[0];
+      var body = local ? local.body : '';
+      var sub = local ? local.sub : f.subreddit || '?';
+      var url = local ? local.url : f.permalink || '';
+      var role = local ? local.role : f.author_role || 'unknown';
+      return '[#' + (i+1) + '] r/' + sub + ' (role: ' + role + ')\nTitle: ' + title + '\n' + body.slice(0, 400) + '\nURL: ' + url;
+    }).join('\n\n---\n\n');
+
+    answerEl.textContent = 'Found ' + hits.length + ' relevant posts. Synthesizing answer...';
+
+    // 3. Gemini synthesis (CORS-enabled, no proxy needed)
+    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+    var geminiRes = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: 'You are a market research analyst for Numeo AI (AI-powered dispatch tools for US trucking). Answer questions based on the Reddit posts provided. Cite sources as [#N]. Be concise and actionable.' }] },
+        contents: [{ parts: [{ text: 'Question: ' + q + '\n\nReddit posts:\n' + passages + '\n\nAnswer using ONLY these posts. Cite with [#N]. Format with clear paragraphs.' }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 1000 },
+      }),
+    });
+    var geminiData = await geminiRes.json();
+    var answer = '';
+    if (geminiData.candidates && geminiData.candidates[0]) {
+      answer = geminiData.candidates[0].content.parts.map(function(p) { return p.text; }).join('');
+    } else {
+      answer = 'Could not generate answer. Raw response: ' + JSON.stringify(geminiData).slice(0, 300);
+    }
+
+    // 4. Format sources
+    var sourceLines = hits.slice(0, 10).map(function(h, i) {
+      var local = DATA.find(function(p) { return p.id === h._id; });
+      return '[#' + (i+1) + '] r/' + (local ? local.sub : '?') + ' - ' + (local ? local.title : '').slice(0, 60) + (local ? '\n     ' + local.url : '');
+    }).join('\n');
+
+    answerEl.textContent = answer + '\n\n--- Sources ---\n' + sourceLines;
+  } catch (e) {
+    answerEl.textContent = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Ask AI';
+  }
+}
+
+function runKeywordSearch() {
+  var q = document.getElementById('kwSearchInput').value.trim().toLowerCase();
   if (!q) return;
   var terms = q.split(/\s+/).filter(function(t) { return t.length > 1; });
 
@@ -353,15 +435,15 @@ function runQuery() {
   scored.sort(function(a, b) { return b.score - a.score; });
   var results = scored.slice(0, 50);
 
-  var resultsDiv = document.getElementById('queryResults');
-  var countDiv = document.getElementById('queryCount');
-  var cardsDiv = document.getElementById('queryCards');
+  var resultsDiv = document.getElementById('kwResults');
+  var countDiv = document.getElementById('kwCount');
+  var cardsDiv = document.getElementById('kwCards');
   resultsDiv.style.display = 'block';
   countDiv.textContent = 'Found ' + scored.length + ' matching posts (showing top 50)';
 
   cardsDiv.textContent = '';
   if (results.length === 0) {
-    countDiv.textContent = 'No matching posts found. Try different keywords.';
+    countDiv.textContent = 'No matching posts. Try different keywords.';
     return;
   }
 
