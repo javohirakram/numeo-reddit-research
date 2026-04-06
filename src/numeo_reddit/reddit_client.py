@@ -1,15 +1,11 @@
 """Reddit fetch — uses public JSON endpoints with a browser user-agent.
 
 No Reddit API app / OAuth required. We hit `https://www.reddit.com/r/{sub}/new.json`
-directly, which returns the same data PRAW would give us for public posts and
-their top comments. This keeps setup friction to zero: no client_id, no secret,
-nothing to register.
+directly with pagination (the `after` cursor) to pull ALL available posts, not
+just the first 100.
 
-Trade-offs vs PRAW:
-  - No rate-limit backoff built in (we add a small sleep between calls).
-  - Comment fetching needs a separate request per post.
-  - Reddit could change/restrict this at any time; if it starts returning 403s,
-    switch to PRAW (rewrite of this file — everything else stays the same).
+Reddit typically lets you paginate back ~1000 posts before returning empty pages.
+For small subs this means the entire history; for large subs, the last few days.
 """
 
 from __future__ import annotations
@@ -32,8 +28,9 @@ USER_AGENT = (
     "Chrome/120.0.0.0 Safari/537.36"
 )
 
-REQUEST_DELAY_SECONDS = 3.0  # polite rate limiting — Reddit blocks aggressively
-MAX_RETRIES = 4
+REQUEST_DELAY_SECONDS = 3.0  # polite rate limiting
+MAX_RETRIES = 5
+PAGE_SIZE = 100  # Reddit max per request
 
 
 @dataclass
@@ -103,74 +100,110 @@ def _get_json(url: str, timeout: int = 20) -> dict | list:
         except urllib.error.HTTPError as e:
             last_err = e
             if e.code in (403, 429, 503):
-                # rate limit — back off exponentially
-                time.sleep((2 ** attempt) * 3)
+                wait = (2 ** attempt) * 5
+                time.sleep(wait)
                 continue
             raise
         except (urllib.error.URLError, TimeoutError) as e:
             last_err = e
-            time.sleep((2 ** attempt) * 2)
+            time.sleep((2 ** attempt) * 3)
     raise RuntimeError(f"Failed after {MAX_RETRIES} retries: {url}") from last_err
 
 
 def fetch_new_posts(
     subreddit: str,
     *,
-    limit: int = 50,
-    comment_limit: int = 20,
+    limit: int = 9999,
+    comment_limit: int = 10,
     since_utc: int | None = None,
 ) -> Iterator[FetchedPost]:
-    """Yield new posts from r/{subreddit}, newest first, up to `limit`.
+    """Yield posts from r/{subreddit}, newest first, with full pagination.
 
-    Stops early if `since_utc` is set and we hit a post older than that.
+    Paginates through Reddit's `after` cursor until one of:
+      - We've yielded `limit` posts
+      - Reddit returns an empty page (no more posts)
+      - We hit a post older than `since_utc` (delta ingest)
     """
-    listing_url = f"https://www.reddit.com/r/{subreddit}/new.json?limit={min(limit, 100)}"
-    data = _get_json(listing_url)
-    children = data.get("data", {}).get("children", [])  # type: ignore[union-attr]
-
     yielded = 0
-    for child in children:
-        if yielded >= limit:
-            break
-        post_data = child.get("data", {})
-        created = int(post_data.get("created_utc", 0))
-        if since_utc is not None and created <= since_utc:
-            break
+    after_cursor: str | None = None
+    page_num = 0
 
-        post_id = post_data.get("id")
-        if not post_id:
-            continue
+    while yielded < limit:
+        # Build URL with pagination cursor
+        url = f"https://www.reddit.com/r/{subreddit}/new.json?limit={PAGE_SIZE}"
+        if after_cursor:
+            url += f"&after={after_cursor}"
 
-        # Fetch comments for this post
-        comments: list[FetchedComment] = []
-        if comment_limit > 0:
+        try:
+            data = _get_json(url)
+        except RuntimeError:
+            break  # can't fetch this page, stop gracefully
+
+        listing = data.get("data", {}) if isinstance(data, dict) else {}
+        children = listing.get("children", [])
+        after_cursor = listing.get("after")
+        page_num += 1
+
+        if not children:
+            break  # no more posts
+
+        hit_time_boundary = False
+        for child in children:
+            if yielded >= limit:
+                break
+            post_data = child.get("data", {})
+            created = int(post_data.get("created_utc", 0))
+
+            if since_utc is not None and created <= since_utc:
+                hit_time_boundary = True
+                break
+
+            post_id = post_data.get("id")
+            if not post_id:
+                continue
+
+            # Fetch comments for this post
+            comments: list[FetchedComment] = []
+            if comment_limit > 0:
+                time.sleep(REQUEST_DELAY_SECONDS)
+                try:
+                    comments = _fetch_comments(subreddit, post_id, comment_limit)
+                except (urllib.error.URLError, urllib.error.HTTPError,
+                        TimeoutError, json.JSONDecodeError, RuntimeError):
+                    comments = []
+
+            yield FetchedPost(
+                id=post_id,
+                subreddit=subreddit,
+                title=post_data.get("title", ""),
+                body=post_data.get("selftext", "") or "",
+                author=post_data.get("author"),
+                author_flair=post_data.get("author_flair_text"),
+                created_utc=created,
+                score=int(post_data.get("score") or 0),
+                num_comments=int(post_data.get("num_comments") or 0),
+                url=post_data.get("url", ""),
+                permalink=f"https://reddit.com{post_data.get('permalink', '')}",
+                comments=comments,
+            )
+            yielded += 1
             time.sleep(REQUEST_DELAY_SECONDS)
-            try:
-                comments = _fetch_comments(subreddit, post_id, comment_limit)
-            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError):
-                comments = []
 
-        yield FetchedPost(
-            id=post_id,
-            subreddit=subreddit,
-            title=post_data.get("title", ""),
-            body=post_data.get("selftext", "") or "",
-            author=post_data.get("author"),
-            author_flair=post_data.get("author_flair_text"),
-            created_utc=created,
-            score=int(post_data.get("score") or 0),
-            num_comments=int(post_data.get("num_comments") or 0),
-            url=post_data.get("url", ""),
-            permalink=f"https://reddit.com{post_data.get('permalink', '')}",
-            comments=comments,
-        )
-        yielded += 1
-        time.sleep(REQUEST_DELAY_SECONDS)
+        if hit_time_boundary:
+            break
+
+        # No more pages if after_cursor is None
+        if not after_cursor:
+            break
+
+        # Delay between pages
+        time.sleep(REQUEST_DELAY_SECONDS * 2)
+
+    return
 
 
 def _fetch_comments(subreddit: str, post_id: str, limit: int) -> list[FetchedComment]:
-    """Fetch top comments for a post. Reddit's /comments/{id}.json returns a list
-    of two Listings: [post_listing, comment_listing]. We use the second."""
+    """Fetch top comments for a post."""
     url = f"https://www.reddit.com/r/{subreddit}/comments/{post_id}.json?limit={limit}&sort=top"
     data = _get_json(url)
     if not isinstance(data, list) or len(data) < 2:

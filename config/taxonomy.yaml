@@ -1,52 +1,67 @@
-# Controlled vocabulary for classification. Keep this stable across runs so that
-# stats stay comparable over time. Add new values deliberately, never rename.
+# Controlled vocabulary for classification — April 2026
+# Based on Numeo product audit + competitor analysis.
+# Keep stable across runs so stats stay comparable.
 
 roles:
   - owner_operator      # owns 1 truck, drives it themselves
   - company_driver      # drives for someone else
-  - carrier_owner       # owns a small fleet (2-20 trucks)
+  - carrier_owner       # owns a small fleet (2-50 trucks)
   - dispatcher          # in-house or independent dispatcher
   - freight_broker      # brokerage side
   - shipper             # cargo owner / manufacturer
-  - logistics_tech      # TMS/SaaS/tech folks
+  - logistics_tech      # SaaS/tech/startup founders
   - unknown
 
 topics:
-  - load_board_frustration
-  - rate_negotiation
-  - broker_trust_and_scams
-  - detention_and_dwell
-  - eld_and_hos
-  - fuel_costs
-  - factoring_and_cashflow
-  - insurance_and_claims
-  - tms_and_software
-  - dispatch_workflow
-  - check_calls_and_updates
-  - safety_and_inspections
-  - market_conditions
-  - authority_and_compliance
-  - maintenance_and_repairs
-  - driver_recruiting_and_retention
+  - load_board_frustration       # DAT/Truckstop/123LB UI, speed, cost, load quality
+  - rate_negotiation             # negotiating with brokers, rate per mile, quoting
+  - broker_trust_and_scams       # payment delays, double brokering, fake loads, Carrier411
+  - dispatch_workflow            # daily dispatch ops, tab overload, phone tag, scheduling
+  - check_calls_and_updates      # broker check calls interrupting work, status updates
+  - tms_and_software             # TMS tools, software complaints, feature gaps
+  - market_conditions            # freight market, rates trending, tariffs, seasonality
+  - fuel_costs                   # diesel prices, fuel cards, fuel optimization
+  - factoring_and_cashflow       # factoring companies, cash flow, quick pay
+  - insurance_and_claims         # commercial insurance, claims, coverage confusion
+  - authority_and_compliance     # MC authority, DOT, FMCSA, IFTA, UCR, permits
+  - eld_and_hos                  # electronic logging devices, hours of service rules
+  - safety_and_inspections       # CSA scores, roadside inspections, cameras, safety culture
+  - driver_recruiting_and_retention  # hiring drivers, turnover, compensation
+  - maintenance_and_repairs      # truck maintenance, breakdowns, parts, warranty
+  - detention_and_dwell          # waiting at shippers/receivers, detention pay claims
+  - backhaul_and_deadhead        # empty miles, return loads, route planning
+  - document_and_paperwork       # BOL, POD, rate confirmations, paperwork errors
 
 competitors:
-  # Fleet management / ELD
-  - Motive              # formerly KeepTruckin
-  - Samsara
-  - Geotab
-  - Omnitracs
-  # Load boards
+  # ── Direct AI competitors to Numeo ──
+  - Datatruck            # AI-native TMS, $12M Series A, closest threat
+  - TruckSmarter          # mobile-first O/O platform, fuel card + AI dispatch
+  - Cinesis               # AI load finder, Truckstop partnership
+  - DispatchMVP           # voice-controlled TMS with "Otto" assistant
+  - PCS Cortex            # PCS Software's AI dispatch, "Cora" voice agent
+
+  # ── Load boards (tools ICP uses daily) ──
   - DAT
   - Truckstop
   - 123Loadboard
+  - Uber Freight
   - Trucker Path
-  # TMS
+  - Parade                # syndication network for broker freight
+
+  # ── Fleet management / ELD ──
+  - Samsara
+  - Motive                # formerly KeepTruckin
+  - Geotab
+  - Omnitracs
+
+  # ── Voice AI for logistics (broker-side, adjacent) ──
+  - HappyRobot            # $62M raised, broker-side voice AI
+  - Vooma                  # broker-side AI
+  - FleetWorks             # broker-side AI
+
+  # ── Legacy TMS ──
   - McLeod
   - TruckingOffice
-  - Axon
-  - Dispatch Anywhere
   - ProTransport
-  # Newer AI-first players
-  - Convoy              # defunct but still referenced
-  - Uber Freight
-  - Loadsmart
+  - Axon
+  - Sylectus
