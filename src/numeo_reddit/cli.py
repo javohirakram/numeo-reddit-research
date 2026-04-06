@@ -39,6 +39,25 @@ def ingest(
 
 
 @app.command()
+def classify(
+    limit: int = typer.Option(
+        10_000,
+        "--limit",
+        help="Max posts to classify in this run.",
+    ),
+    skip_pinecone: bool = typer.Option(
+        False,
+        "--skip-pinecone",
+        help="Write to SQLite only; don't upsert to the vector index.",
+    ),
+) -> None:
+    """Classify all unclassified posts in SQLite via Claude, then upsert to Pinecone."""
+    from numeo_reddit.classify_batch import run_classify
+
+    run_classify(limit=limit, skip_pinecone=skip_pinecone)
+
+
+@app.command()
 def query(
     question: str = typer.Argument(..., help="Natural-language question."),
     top_k: int = typer.Option(12, "--top-k", help="Passages to retrieve."),

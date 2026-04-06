@@ -1,37 +1,67 @@
-# Subreddits to ingest. Start small, expand once the pipeline is proven.
-# `limit` = max posts to fetch per run (delta-aware, so this is a safety cap)
-# `comment_limit` = how many top comments to pull per post
-# `audience_hint` = what kind of people dominate this sub (used as a classifier prior)
+# Subreddits to ingest. Limits tuned per sub based on activity + relevance.
+# audience_hint is used as a classifier prior for the author_role inference.
+#
+# Dropped from earlier config:
+#   - Dispatchers  (~50% emergency-services dispatch, not trucking)
+#   - Trucking     (returns "blocked due to network policy" for our egress IP)
+# Use TruckDispatchers instead — it's the actual trucking-dispatch community.
 
 subreddits:
+  # --- core trucking audiences (deep scrape) ---
   - name: Truckers
-    limit: 50
-    comment_limit: 20
+    limit: 100
+    comment_limit: 10
     audience_hint: drivers (mix of company drivers and owner-operators)
 
-  - name: Trucking
-    limit: 50
-    comment_limit: 20
-    audience_hint: drivers and small carriers
-
   - name: OwnerOperators
-    limit: 50
-    comment_limit: 20
+    limit: 100
+    comment_limit: 10
     audience_hint: owner-operators and small fleet owners
 
+  - name: TruckDispatchers
+    limit: 100
+    comment_limit: 10
+    audience_hint: truck dispatchers (independent + in-house)
+
   - name: FreightBrokers
-    limit: 30
-    comment_limit: 15
-    audience_hint: freight brokers and brokerages
+    limit: 100
+    comment_limit: 10
+    audience_hint: freight brokers and brokerage reps
 
-  - name: Dispatchers
-    limit: 30
-    comment_limit: 15
-    audience_hint: truck dispatchers
+  # --- startup / new-carrier audiences (smaller but high-signal for Numeo) ---
+  - name: TruckingStartups
+    limit: 80
+    comment_limit: 10
+    audience_hint: new carriers launching their own authority
 
-  # --- expand to these after the 5 above are working ---
-  # - name: CDL
-  # - name: Truckdrivers
-  # - name: logistics
-  # - name: supplychain
-  # - name: smallbusiness
+  - name: HotshotStartup
+    limit: 80
+    comment_limit: 10
+    audience_hint: new hot shot operators, rookie dot/authority questions
+
+  - name: HotShotTrucking
+    limit: 80
+    comment_limit: 10
+    audience_hint: hot shot drivers and small fleet owners
+
+  # --- broader logistics / supply chain (noisy, lower priority) ---
+  - name: logistics
+    limit: 60
+    comment_limit: 5
+    audience_hint: logistics professionals (3PL, warehouse, transportation planners)
+
+  - name: supplychain
+    limit: 60
+    comment_limit: 5
+    audience_hint: supply chain professionals, shippers
+
+  # --- horizontal communities — expect heavy noise, classifier will filter ---
+  - name: smallbusiness
+    limit: 40
+    comment_limit: 5
+    audience_hint: small business owners (only a small fraction trucking-related)
+
+  - name: SaaS
+    limit: 40
+    comment_limit: 5
+    audience_hint: SaaS founders (mostly unrelated; looking for trucking-SaaS mentions)

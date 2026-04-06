@@ -1,41 +1,60 @@
 # Numeo Reddit market snapshot — since all
 
-_Generated 2026-04-05 19:26 UTC. Covers 41 posts, 41 classified._
+_Generated 2026-04-06 00:25 UTC. Covers 852 posts, 851 classified._
 
 ## Who is posting
 
 | Role | Posts | Share |
 |---|---:|---:|
-| owner_operator | 11 | 26.8% |
-| logistics_tech | 6 | 14.6% |
-| freight_broker | 6 | 14.6% |
-| carrier_owner | 6 | 14.6% |
-| company_driver | 5 | 12.2% |
-| unknown | 4 | 9.8% |
-| dispatcher | 3 | 7.3% |
+| unknown | 712 | 83.7% |
+| owner_operator | 56 | 6.6% |
+| freight_broker | 26 | 3.1% |
+| dispatcher | 22 | 2.6% |
+| company_driver | 22 | 2.6% |
+| logistics_tech | 6 | 0.7% |
+| carrier_owner | 6 | 0.7% |
+| shipper | 1 | 0.1% |
 
 ## Top topics
 
 | Topic | Mentions |
 |---|---:|
-| rate_negotiation | 8 |
-| dispatch_workflow | 7 |
-| authority_and_compliance | 7 |
-| tms_and_software | 6 |
-| driver_recruiting_and_retention | 6 |
-| market_conditions | 5 |
-| broker_trust_and_scams | 4 |
-| load_board_frustration | 3 |
-| check_calls_and_updates | 3 |
-| safety_and_inspections | 3 |
-| fuel_costs | 3 |
-| factoring_and_cashflow | 2 |
-| maintenance_and_repairs | 2 |
-| detention_and_dwell | 1 |
-| eld_and_hos | 1 |
+| dispatch_workflow | 100 |
+| market_conditions | 83 |
+| authority_and_compliance | 70 |
+| broker_trust_and_scams | 51 |
+| rate_negotiation | 46 |
+| driver_recruiting_and_retention | 42 |
+| fuel_costs | 37 |
+| load_board_frustration | 32 |
+| insurance_and_claims | 29 |
+| maintenance_and_repairs | 27 |
+| safety_and_inspections | 23 |
+| tms_and_software | 22 |
+| factoring_and_cashflow | 22 |
+| detention_and_dwell | 12 |
+| eld_and_hos | 7 |
 
 ## Top pain points (free-form)
 
+- **(6)** high insurance costs
+- **(4)** claims of non-payment
+- **(4)** bond pending cancellation
+- **(3)** Uncertainty about insurance requirements
+- **(2)** lack of compliance knowledge
+- **(2)** loneliness on the road
+- **(2)** building reputation with no loads
+- **(2)** finding loads
+- **(2)** difficulty reaching shippers
+- **(2)** High insurance down payments
+- **(2)** High insurance costs
+- **(2)** High maintenance costs
+- **(2)** high operating costs
+- **(2)** high maintenance costs
+- **(2)** compliance issues blamed on drivers
+- **(2)** system problems affecting compliance
+- **(2)** Hiring experienced drivers
+- **(2)** double brokering issues
 - **(1)** loads posted and gone in seconds
 - **(1)** brokers not picking up
 - **(1)** drivers waiting on dispatcher
@@ -43,57 +62,94 @@ _Generated 2026-04-05 19:26 UTC. Covers 41 posts, 41 classified._
 - **(1)** good loads gone in seconds
 - **(1)** constant scramble across tabs and phones
 - **(1)** load boards crowded, posts gone in seconds
-- **(1)** endless broker calling and negotiations
-- **(1)** scattered comms across calls/texts/spreadsheets
-- **(1)** brokers stuck as middleman providing instant updates
-- **(1)** customers demanding instant updates that brokers can't deliver
-- **(1)** modern TMS products don't track contract signer / signed date / version
-- **(1)** stuck on 20-year-old homebrewed TMS because replacements miss fields
-- **(1)** MyCarrierPackets API fields ignored by most TMS
-- **(1)** manual data entry from email PDFs
-- **(1)** dispatcher pushback on automation ('then we won't have jobs')
-- **(1)** $140k past due from HUB Group
-- **(1)** brokers making fake double-brokering claims to avoid paying
-- **(1)** AP departments going silent for months
-- **(1)** brokers offering absurdly low rates ($1600 for 930mi refrigerated chicken)
-- **(1)** no reputation DB for brokers from carrier side (vs Carrier411 for brokers)
-- **(1)** brokers can flag carriers with no just cause
-- **(1)** information asymmetry is structural
-- **(1)** manual data export/import from fleet systems
-- **(1)** route reworks when driver calls in sick or stops cancel
 
 ## Competitor mentions
 
 | Tool | Mentions |
 |---|---:|
-| DAT | 2 |
-| Samsara | 2 |
+| DAT | 27 |
+| Truckstop | 12 |
+| Samsara | 7 |
+| Motive | 7 |
+| Uber Freight | 5 |
+| McLeod | 4 |
+| Trucker Path | 3 |
+| 123Loadboard | 2 |
+| Progressive | 2 |
+| Swift | 2 |
+| Dispatcher.com | 1 |
+| CurbWaste | 1 |
+| Loadlink | 1 |
 | Geotab | 1 |
-| Motive | 1 |
+| Convoy | 1 |
+| TruckStop | 1 |
+| Scale Funding | 1 |
+| RTS | 1 |
+| G Squared Funding | 1 |
+| Sylectus | 1 |
+| Intangles | 1 |
+| Knight | 1 |
+| Estes | 1 |
+| Averitt | 1 |
+| SEFL | 1 |
+| R & L | 1 |
+| FedEx | 1 |
+| ABF | 1 |
+| Old Dominion | 1 |
+| XPO | 1 |
+| SAIA | 1 |
+| Southeastern | 1 |
+| Roadrunner | 1 |
+| YRC | 1 |
+| ODFL | 1 |
+| AAA Cooper | 1 |
+| A Duie Pyle | 1 |
+| Love's | 1 |
+| TA/Petro | 1 |
+| Northland | 1 |
+| Nirvana | 1 |
+| Clearblue | 1 |
+| Delhivery | 1 |
+| Bluedart | 1 |
+| Shiprocket | 1 |
+| ImportYeti | 1 |
+| Geico | 1 |
+| Zoho Solo | 1 |
+| Prime inc | 1 |
+| Schneider | 1 |
+| ProTransport | 1 |
 
 ## Subreddit coverage
 
 | Subreddit | Classified posts |
 |---|---:|
+| r/TruckDispatchers | 100 |
+| r/OwnerOperators | 100 |
+| r/FreightBrokers | 100 |
+| r/Truckers | 100 |
+| r/TruckingStartups | 80 |
+| r/HotShotTrucking | 80 |
+| r/HotshotStartup | 80 |
+| r/logistics | 60 |
+| r/supplychain | 60 |
+| r/SaaS | 40 |
+| r/smallbusiness | 39 |
 | r/Dispatchers | 12 |
-| r/FreightBrokers | 12 |
-| r/OwnerOperators | 12 |
-| r/Truckers | 5 |
 
 ## Highest-relevance posts
 
 - **[5/5]** _r/Dispatchers · logistics_tech_ — [Dispatch is getting harder — not because you’re doing something wrong… but because there’s too much to do.](https://reddit.com/r/Dispatchers/comments/1l86f0l/dispatch_is_getting_harder_not_because_youre/)
 - **[5/5]** _r/Dispatchers · logistics_tech_ — [Octopus: a smarter way to handle dispatch (beta waitlist open)](https://reddit.com/r/Dispatchers/comments/1lle9v7/octopus_a_smarter_way_to_handle_dispatch_beta/)
 - **[5/5]** _r/Dispatchers · logistics_tech_ — [Your suggestion can save my 1 month of my 4 cofounder team 🚛](https://reddit.com/r/Dispatchers/comments/1mzlukl/your_suggestion_can_save_my_1_month_of_my_4/)
+- **[4/5]** _r/TruckDispatchers · owner_operator_ — [So im 95% sure I just caught my dispatcher/company stealing from me...he sends this screenshot of maps for the load...says he can get it for 1800$...well im looking myself at DAT and I see what appears to be exact same load for 2100$ what are the chances there was 2 loads to same tiny town in VA?](https://reddit.com/r/TruckDispatchers/comments/1oe9o6u/so_im_95_sure_i_just_caught_my_dispatchercompany/)
+- **[4/5]** _r/OwnerOperators · owner_operator_ — [Loadboard freight oo's](https://reddit.com/r/OwnerOperators/comments/1rwcy9a/loadboard_freight_oos/)
 - **[4/5]** _r/FreightBrokers · freight_broker_ — [The difference i see when something is late as a coordinator (based on actual revenue we see)](https://reddit.com/r/FreightBrokers/comments/1scpt15/the_difference_i_see_when_something_is_late_as_a/)
 - **[4/5]** _r/FreightBrokers · freight_broker_ — [BROKER CARRIER CONTRACT MANAGEMENT VIA TMS](https://reddit.com/r/FreightBrokers/comments/1sbl5wm/broker_carrier_contract_management_via_tms/)
 - **[4/5]** _r/Dispatchers · logistics_tech_ — [Automating the Boring Shit in Dispatching - Feedback needed.](https://reddit.com/r/Dispatchers/comments/1jfu7ug/automating_the_boring_shit_in_dispatching/)
+- **[4/5]** _r/TruckDispatchers · dispatcher_ — [Who else is still dispatching roll off trucks manually and why are you doing this to yourself?](https://reddit.com/r/TruckDispatchers/comments/1r0wc5m/who_else_is_still_dispatching_roll_off_trucks/)
 - **[3/5]** _r/FreightBrokers · carrier_owner_ — [HUB Group payment delays](https://reddit.com/r/FreightBrokers/comments/1sby57e/hub_group_payment_delays/)
+- **[3/5]** _r/OwnerOperators · owner_operator_ — [Do you know your profit before your wheels turn?](https://reddit.com/r/OwnerOperators/comments/1rujfpv/do_you_know_your_profit_before_your_wheels_turn/)
 - **[3/5]** _r/FreightBrokers · dispatcher_ — [Are these guys serious?](https://reddit.com/r/FreightBrokers/comments/1sbdqj6/are_these_guys_serious/)
-- **[3/5]** _r/OwnerOperators · owner_operator_ — [Why are there no versions of Carrier411 for Brokers?](https://reddit.com/r/OwnerOperators/comments/1sc8lk2/why_are_there_no_versions_of_carrier411_for/)
-- **[3/5]** _r/Dispatchers · logistics_tech_ — [Built App to Help Dispatchers](https://reddit.com/r/Dispatchers/comments/1jairlp/built_app_to_help_dispatchers/)
-- **[3/5]** _r/FreightBrokers · freight_broker_ — [Quotes](https://reddit.com/r/FreightBrokers/comments/1sbdums/quotes/)
-- **[3/5]** _r/OwnerOperators · owner_operator_ — [Has anyone heard of an website called HeyRuby apparently they help with back office stuff.](https://reddit.com/r/OwnerOperators/comments/1scre9x/has_anyone_heard_of_an_website_called_heyruby/)
-- **[3/5]** _r/FreightBrokers · carrier_owner_ — [Honest question for brokers — when a carrier submits a detention claim with timestamped photos, a stamped BOL, and an email trail showing they notified you before free time expired, what actually happens on your end? Does it go to someone? Does anyone review it?](https://reddit.com/r/FreightBrokers/comments/1scyy3y/honest_question_for_brokers_when_a_carrier/)
-- **[2/5]** _r/OwnerOperators · owner_operator_ — [New Gig](https://reddit.com/r/OwnerOperators/comments/1scadf3/new_gig/)
-- **[2/5]** _r/OwnerOperators · owner_operator_ — [$9,000-$10,000 gross at $2.50/mi - good for a dry van?](https://reddit.com/r/OwnerOperators/comments/1scu5kz/900010000_gross_at_250mi_good_for_a_dry_van/)
+- **[3/5]** _r/OwnerOperators · owner_operator_ — [Would you take it or wait it out? 🤦🏼‍♂️](https://reddit.com/r/OwnerOperators/comments/1rw7e3h/would_you_take_it_or_wait_it_out/)
+- **[3/5]** _r/TruckDispatchers · dispatcher_ — [How many drivers do you handle all at once?](https://reddit.com/r/TruckDispatchers/comments/1p6rdbj/how_many_drivers_do_you_handle_all_at_once/)
+- **[3/5]** _r/TruckingStartups · unknown_ — [The main problem](https://reddit.com/r/TruckingStartups/comments/1n4eiln/the_main_problem/)
