@@ -2,8 +2,8 @@ name: Daily Reddit ingest
 
 on:
   schedule:
-    - cron: "0 9 * * *"
-  workflow_dispatch: {}
+    - cron: "0 9 * * *"   # 9:00 UTC daily
+  workflow_dispatch: {}    # manual trigger
 
 permissions:
   contents: write
@@ -26,12 +26,11 @@ jobs:
       - name: Install package
         run: pip install -e .
 
-      - name: Run ingest
-        env:
-          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          PINECONE_INDEX: numeo-reddit
+      # Step 1: Scrape new posts (delta-aware — only fetches since last run)
+      - name: Scrape new posts
         run: numeo-reddit ingest --skip-classify
 
+      # Step 2: Classify new posts with GPT-4o-mini
       - name: Classify new posts
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -40,18 +39,74 @@ jobs:
           CLASSIFIER_MODEL: gpt-4o-mini
         run: numeo-reddit classify
 
-      - name: Generate fresh market snapshot
+      # Step 3: Generate daily report (last 24h)
+      - name: Generate daily report
+        run: python scripts/daily_report.py
+
+      # Step 4: Regenerate dashboard data files
+      - name: Rebuild dashboard data
+        run: python scripts/rebuild_dashboard_data.py
+
+      # Step 5: Generate market snapshot
+      - name: Generate market snapshot
         run: numeo-reddit report --out reports/market-snapshot.md --since 30d
 
+      # Step 6: Export updated knowledge files
+      - name: Export knowledge files
+        run: |
+          python -c "
+          import sqlite3, json, time
+          from pathlib import Path
+          conn = sqlite3.connect('data/reddit.db')
+          conn.row_factory = sqlite3.Row
+          posts = conn.execute('''
+              SELECT p.id, p.subreddit, p.title, p.body, p.score, p.num_comments, p.permalink,
+                     c.author_role, c.topics, c.pain_points, c.competitors_mentioned,
+                     c.sentiment, c.numeo_relevance, c.relevance_reason
+              FROM posts p LEFT JOIN classifications c ON c.post_id = p.id
+              ORDER BY p.subreddit, c.numeo_relevance DESC, p.score DESC
+          ''').fetchall()
+          lines = ['# Numeo Reddit Research Database', '# ' + str(len(posts)) + ' posts, updated ' + time.strftime('%Y-%m-%d'), '']
+          for p in posts:
+              topics = json.loads(p['topics']) if p['topics'] else []
+              pains = json.loads(p['pain_points']) if p['pain_points'] else []
+              comps = json.loads(p['competitors_mentioned']) if p['competitors_mentioned'] else []
+              lines.append('--- POST ---')
+              lines.append('Title: ' + p['title'])
+              lines.append('Sub: r/' + p['subreddit'] + ' | Score: ' + str(p['score']) + ' | ' + p['permalink'])
+              lines.append('Role: ' + (p['author_role'] or 'unknown') + ' | Sentiment: ' + (p['sentiment'] or 'neutral') + ' | Relevance: ' + str(p['numeo_relevance'] or 0) + '/5')
+              if topics: lines.append('Topics: ' + ', '.join(topics))
+              if pains: lines.append('Pain points: ' + ', '.join(pains))
+              if comps: lines.append('Competitors: ' + ', '.join(comps))
+              body = (p['body'] or '').strip()[:800]
+              if body: lines.append('Body: ' + body)
+              lines.append('')
+          Path('data/numeo-reddit-knowledge.txt').write_text(chr(10).join(lines))
+          print('Updated knowledge file: ' + str(len(posts)) + ' posts')
+          "
+
+      # Step 7: Commit everything back
       - name: Commit updated data
         run: |
           git config user.name  "numeo-bot"
           git config user.email "numeo-bot@users.noreply.github.com"
-          git add data/reddit.db reports/market-snapshot.md
+          git add data/ reports/ docs/data.json docs/stats.json docs/context.json
           if git diff --staged --quiet; then
             echo "no changes to commit"
           else
             DATE=$(date -u +%Y-%m-%d)
-            git commit -m "ingest: ${DATE}"
+            NEW_POSTS=$(python -c "
+          import sqlite3, time
+          conn = sqlite3.connect('data/reddit.db')
+          cutoff = int(time.time()) - 86400
+          n = conn.execute('SELECT COUNT(*) FROM posts WHERE ingested_at >= ?', (cutoff,)).fetchone()[0]
+          print(n)
+          ")
+            TOTAL=$(python -c "
+          import sqlite3
+          conn = sqlite3.connect('data/reddit.db')
+          print(conn.execute('SELECT COUNT(*) FROM posts').fetchone()[0])
+          ")
+            git commit -m "daily ingest ${DATE}: +${NEW_POSTS} new posts (${TOTAL} total)"
             git push
           fi
