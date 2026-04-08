@@ -355,10 +355,8 @@ function renderPosts() {
 
 function loadMorePosts() { renderPosts(); }
 
-// API keys for browser-direct calls (Gemini + Pinecone both support CORS)
-var GEMINI_KEY = 'AIzaSyBb0h1ffC-eNaQCPf8WXUwkRFBFPVBbQSM';
-var PC_KEY = 'pcsk_5nAxxb_8QgC1Tez3L1nqjiEUb7fJEYTg6zgD687WW3hrQ5tNfeoum7yXh7PCGVr6rpRrzu';
-var PC_HOST = 'numeo-reddit-d5h5qa8.svc.aped-4627-b74a.pinecone.io';
+// API proxy on Render — holds keys server-side, no credentials in frontend
+var API_BASE = 'https://numeo-query-api.onrender.com';
 
 function buildDataContext() {
   var C = CONTEXT;
@@ -409,136 +407,45 @@ async function runQuery() {
   answerEl.innerHTML = '<p style="color:var(--muted)">Searching across ' + DATA.length + ' posts...</p>';
 
   try {
-    // 1. Pinecone semantic search
-    var searchRes = await fetch('https://' + PC_HOST + '/records/namespaces/posts/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Api-Key': PC_KEY },
-      body: JSON.stringify({ query: { inputs: { text: q }, top_k: 15 } }),
-    });
-    var searchData = await searchRes.json();
-    var hits = (searchData.result && searchData.result.hits ? searchData.result.hits : []);
-
-    // 2. Build rich passages from search hits
-    var hitPosts = [];
-    hits.forEach(function(h, i) {
-      var local = DATA.find(function(p) { return p.id === h._id; });
-      if (!local) return;
-      hitPosts.push({
-        num: i + 1,
-        title: local.title,
-        sub: local.sub,
-        score: local.score,
-        comments: local.comments,
-        url: local.url,
-        role: local.role || 'unknown',
-        body: (local.body || '').slice(0, 500),
-        pains: local.pains,
-        topics: local.topics,
-        competitors: local.competitors,
-      });
-    });
-
-    var passageText = hitPosts.map(function(p) {
-      var lines = ['[Source #' + p.num + ']: "' + p.title + '"'];
-      lines.push('r/' + p.sub + ' | ' + p.score + ' upvotes | ' + p.comments + ' comments | role: ' + p.role);
-      lines.push('URL: ' + p.url);
-      if (p.body) lines.push('Content: ' + p.body);
-      if (p.pains.length) lines.push('Pain points: ' + p.pains.join('; '));
-      return lines.join('\n');
-    }).join('\n\n---\n\n');
-
-    answerEl.innerHTML = '<p style="color:var(--muted)">Generating comprehensive research analysis...</p>';
-
-    // 3. Build the full data context
+    // 1. Build data context from pre-loaded CONTEXT
     var dataContext = buildDataContext();
+    answerEl.innerHTML = '<p style="color:var(--muted)">Sending to AI for comprehensive analysis...</p>';
 
-    // 4. Gemini with comprehensive prompt
-    var systemPrompt = [
-      'You are a senior market research analyst presenting findings to the Numeo AI executive team.',
-      'You have analyzed ' + CONTEXT.total_posts + ' Reddit posts from 9 US trucking/logistics communities.',
-      '',
-      'Numeo AI builds AI-powered dispatch and operations tools for small-to-mid carriers (1-50 trucks) and independent dispatchers:',
-      '',
-      '- **Chrome Extension / Spot** (free): Sits on top of DAT load board. Lets dispatchers evaluate loads, check broker reputation, and contact brokers via AI email/call — all without leaving DAT. This is the free entry point and top-of-funnel acquisition engine (2000+ users).',
-      '- **Load Hub** (part of Numeo One): Aggregates loads from multiple load boards (DAT, Truckstop, 123Loadboard, Parade, and private boards) into a single view for faster comparison and booking. Includes AI-powered rate negotiation via email and voice calls.',
-      '- **TMS** (new product, part of Numeo One): Handles everything post-booking — fleet tracking, paperwork verification (compares BOL/POD to rate confirmation), automated broker status updates (replaces manual check calls), and document management.',
-      '- **Numeo One**: The overall platform tying it all together. Includes Load Hub, TMS, AI email agents, AI call agents (VoiceFlow), and auto-booking. Covers the full load lifecycle from finding a load to getting paid.',
-      '',
-      'Target customers: Small carriers (1-50 trucks), independent dispatchers, and owner-operators.',
-      'Competitors: Datatruck ($12M Series A, full TMS), TruckSmarter (mobile, fuel card + AI dispatch), Cinesis (AI load finder), DispatchMVP (voice TMS).',
-      '',
-      'INSTRUCTIONS FOR YOUR RESPONSE:',
-      '',
-      '1. COMPLETENESS: If asked for top 3, give ALL 3 in full depth. Never cut short. Each section should be thorough.',
-      '',
-      '2. DATA-DRIVEN: You have the full statistical breakdown. For every claim, cite the exact count:',
-      '   "Out of ' + CONTEXT.total_posts + ' posts analyzed, 427 (6.8%) discuss broker trust issues."',
-      '',
-      '3. SPECIFIC QUOTES: For each major finding, include 2-3 direct quotes from actual Reddit users.',
-      '   Format as: > "quote text" — [Source title](URL)',
-      '',
-      '4. FORMATTING:',
-      '   - Use ## for major findings (numbered: "## 1. Finding Name")',
-      '   - Use **bold** for key numbers and emphasis',
-      '   - Use > blockquotes for user quotes',
-      '   - Use [link text](url) for all Reddit post references — never show raw URLs',
-      '   - Use bullet points for supporting details',
-      '',
-      '5. STRUCTURE each finding as:',
-      '   - What the problem is + how many posts mention it (with percentage)',
-      '   - 2-3 direct quotes from users (with links to their posts)',
-      '   - Why this matters for Numeo specifically',
-      '',
-      '6. END with a "## Recommendations for Numeo" section with 2-3 specific, actionable growth insights.',
-      '',
-      '7. TAKE YOUR TIME. Aim for 800-1200 words. Completeness and specificity matter more than brevity.',
-    ].join('\n');
-
-    var userPrompt = [
-      'QUESTION: ' + q,
-      '',
-      '=== FULL DATASET STATISTICS AND QUOTES ===',
-      dataContext,
-      '',
-      '=== SEMANTICALLY RELEVANT POSTS FOR THIS QUESTION ===',
-      passageText,
-      '',
-      'Answer comprehensively using both the aggregate statistics AND the specific posts. Cite sources with links.',
-    ].join('\n');
-
-    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_KEY;
-    var geminiRes = await fetch(geminiUrl, {
+    // 2. Call Render proxy (holds Gemini + Pinecone keys server-side)
+    var res = await fetch(API_BASE + '/api/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 5000 },
-      }),
+      body: JSON.stringify({ question: q, context: dataContext }),
     });
-    var geminiData = await geminiRes.json();
-    var answer = '';
-    if (geminiData.candidates && geminiData.candidates[0]) {
-      answer = geminiData.candidates[0].content.parts.map(function(p) { return p.text; }).join('');
-    } else {
-      answerEl.textContent = 'Error: ' + JSON.stringify(geminiData).slice(0, 500);
+    var result = await res.json();
+
+    if (result.error) {
+      answerEl.textContent = 'Error: ' + result.error;
       return;
     }
 
-    // 5. Render markdown answer
-    var answerHtml = DOMPurify.sanitize(marked.parse(answer));
+    // 3. Render markdown answer
+    var answerHtml = DOMPurify.sanitize(marked.parse(result.answer || 'No answer generated.'));
 
-    // 6. Build clickable sources
-    var sourcesHtml = '<div class="sources-list"><h4>Sources (' + hitPosts.length + ' posts cited)</h4>';
-    hitPosts.forEach(function(p) {
-      sourcesHtml += '<div class="source-item">';
-      sourcesHtml += '<span class="source-num">[#' + p.num + ']</span>';
-      sourcesHtml += '<span class="source-meta">';
-      sourcesHtml += '<a href="' + DOMPurify.sanitize(p.url) + '" target="_blank">' + DOMPurify.sanitize(p.title.slice(0, 70)) + '</a>';
-      sourcesHtml += ' — r/' + DOMPurify.sanitize(p.sub) + ' · ' + p.score + ' pts · ' + p.comments + ' comments';
-      sourcesHtml += '</span></div>';
-    });
-    sourcesHtml += '</div>';
+    // 4. Build clickable sources
+    var sourcesHtml = '';
+    if (result.sources && result.sources.length > 0) {
+      sourcesHtml = '<div class="sources-list"><h4>Sources (' + result.sources.length + ' posts)</h4>';
+      result.sources.forEach(function(s) {
+        var local = DATA.find(function(p) { return p.url === s.url; });
+        var title = local ? local.title : (s.title || '');
+        var sub = local ? local.sub : (s.sub || '?');
+        var sc = local ? local.score : (s.score || 0);
+        var cm = local ? local.comments : (s.comments || 0);
+        sourcesHtml += '<div class="source-item">';
+        sourcesHtml += '<span class="source-num">[#' + s.num + ']</span>';
+        sourcesHtml += '<span class="source-meta">';
+        sourcesHtml += '<a href="' + DOMPurify.sanitize(s.url || '') + '" target="_blank">' + DOMPurify.sanitize(title.slice(0, 70)) + '</a>';
+        sourcesHtml += ' — r/' + DOMPurify.sanitize(sub) + ' · ' + sc + ' pts · ' + cm + ' comments';
+        sourcesHtml += '</span></div>';
+      });
+      sourcesHtml += '</div>';
+    }
 
     answerEl.innerHTML = answerHtml + sourcesHtml;
   } catch (e) {
