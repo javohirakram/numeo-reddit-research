@@ -126,9 +126,19 @@
 
   <div id="query" class="tab-content">
     <div class="query-box">
-      <p style="margin-bottom:12px;color:var(--muted);font-size:13px;">Ask any question in natural language. AI searches 6,247 Reddit posts semantically and synthesizes an answer with citations.</p>
+      <p style="margin-bottom:12px;color:var(--muted);font-size:13px;">Ask any question in natural language. AI searches Reddit posts semantically and synthesizes an answer with citations.</p>
       <div class="query-input">
         <input type="text" id="queryInput" placeholder="e.g. What do owner-operators hate most about load boards?">
+        <select id="queryTimeFilter" style="min-width:150px;">
+          <option value="all">All time</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="180" selected>Last 6 months</option>
+          <option value="365">Last year</option>
+        </select>
+        <select id="querySubFilter" style="min-width:140px;">
+          <option value="">All subreddits</option>
+        </select>
         <button id="queryBtn">Ask AI</button>
       </div>
       <div id="queryAnswer" style="display:none;" class="answer"></div>
@@ -209,6 +219,12 @@ async function init() {
   loadSettings();
   setupQuickQueries();
   setupEventListeners();
+  // Populate query subreddit filter
+  var qSubSel = document.getElementById('querySubFilter');
+  Object.keys(STATS.subreddits).forEach(function(s) {
+    var opt = document.createElement('option'); opt.value = s; opt.textContent = 'r/' + s;
+    qSubSel.appendChild(opt);
+  });
 }
 
 function renderDashboard() {
@@ -358,7 +374,74 @@ function loadMorePosts() { renderPosts(); }
 // API proxy on Render — holds keys server-side, no credentials in frontend
 var API_BASE = 'https://numeo-query-api.onrender.com';  // Render proxy — keys are server-side
 
+function getFilteredData() {
+  var days = document.getElementById('queryTimeFilter').value;
+  var sub = document.getElementById('querySubFilter').value;
+  var cutoff = days === 'all' ? 0 : Math.floor(Date.now() / 1000) - parseInt(days) * 86400;
+  return DATA.filter(function(p) {
+    if (p.ts < cutoff) return false;
+    if (sub && p.sub !== sub) return false;
+    return true;
+  });
+}
+
 function buildDataContext() {
+  var filtered = getFilteredData();
+  var days = document.getElementById('queryTimeFilter').value;
+  var sub = document.getElementById('querySubFilter').value;
+  var timeLabel = days === 'all' ? 'all time' : 'last ' + days + ' days';
+  var subLabel = sub ? 'r/' + sub + ' only' : 'all 9 subreddits';
+
+  // Compute stats from filtered data
+  var topicCounts = {}, painCounts = {}, compCounts = {}, roleCounts = {}, subCounts = {};
+  filtered.forEach(function(p) {
+    subCounts[p.sub] = (subCounts[p.sub] || 0) + 1;
+    roleCounts[p.role || 'unknown'] = (roleCounts[p.role || 'unknown'] || 0) + 1;
+    p.topics.forEach(function(t) { topicCounts[t] = (topicCounts[t] || 0) + 1; });
+    p.pains.forEach(function(pp) { painCounts[pp] = (painCounts[pp] || 0) + 1; });
+    p.competitors.forEach(function(c) { compCounts[c] = (compCounts[c] || 0) + 1; });
+  });
+
+  // Sort helper
+  function sorted(obj, n) {
+    return Object.entries(obj).sort(function(a,b) { return b[1]-a[1]; }).slice(0, n || 999);
+  }
+
+  var parts = [];
+  parts.push('# DATASET: ' + filtered.length + ' posts (' + timeLabel + ', ' + subLabel + ') out of ' + DATA.length + ' total\n');
+
+  parts.push('## TOPIC BREAKDOWN');
+  sorted(topicCounts).forEach(function(e) {
+    parts.push('- **' + e[0].replace(/_/g,' ') + '**: ' + e[1] + ' posts (' + (100*e[1]/filtered.length).toFixed(1) + '%)');
+  });
+
+  parts.push('\n## TOP PAIN POINTS');
+  sorted(painCounts, 40).forEach(function(e) {
+    parts.push('- "' + e[0] + '": ' + e[1] + ' posts');
+  });
+
+  parts.push('\n## COMPETITOR MENTIONS');
+  sorted(compCounts, 20).forEach(function(e) {
+    parts.push('- ' + e[0] + ': ' + e[1] + ' posts');
+  });
+
+  parts.push('\n## ROLES: ' + sorted(roleCounts).map(function(e) { return e[0] + ': ' + e[1]; }).join(', '));
+  parts.push('\n## SUBREDDITS: ' + sorted(subCounts).map(function(e) { return 'r/' + e[0] + ': ' + e[1]; }).join(', '));
+
+  // Top engagement posts from filtered set
+  var topPosts = filtered.slice().sort(function(a,b) { return (b.score + b.comments) - (a.score + a.comments); }).slice(0, 20);
+  parts.push('\n## TOP ENGAGEMENT POSTS (' + timeLabel + ')');
+  topPosts.forEach(function(p, i) {
+    parts.push('\n### Post ' + (i+1) + ': "' + p.title + '"');
+    parts.push('r/' + p.sub + ' | ' + p.score + ' upvotes | ' + p.comments + ' comments | role: ' + (p.role || 'unknown'));
+    parts.push('URL: ' + p.url);
+    if (p.body) parts.push('> ' + p.body.slice(0, 250));
+  });
+
+  return parts.join('\n');
+}
+
+function buildDataContextOld() {
   var C = CONTEXT;
   var parts = [];
   parts.push('# DATASET: ' + C.total_posts + ' Reddit posts, ' + C.total_comments + ' comments from 9 US trucking subreddits\n');
@@ -402,9 +485,12 @@ async function runQuery() {
   if (!q) return;
   var btn = document.getElementById('queryBtn');
   var answerEl = document.getElementById('queryAnswer');
-  btn.disabled = true; btn.textContent = 'Analyzing ' + DATA.length + ' posts...';
+  var filtered = getFilteredData();
+  var days = document.getElementById('queryTimeFilter').value;
+  var timeLabel = days === 'all' ? 'all time' : 'last ' + days + ' days';
+  btn.disabled = true; btn.textContent = 'Analyzing ' + filtered.length + ' posts...';
   answerEl.style.display = 'block';
-  answerEl.innerHTML = '<p style="color:var(--muted)">Searching across ' + DATA.length + ' posts...</p>';
+  answerEl.innerHTML = '<p style="color:var(--muted)">Analyzing ' + filtered.length + ' posts (' + timeLabel + ')...</p>';
 
   try {
     // 1. Build data context from pre-loaded CONTEXT
