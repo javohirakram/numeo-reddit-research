@@ -1,32 +1,32 @@
 # Numeo Reddit market snapshot — since 30d
 
-_Generated 2026-04-07 10:35 UTC. Covers 1718 posts, 1718 classified._
+_Generated 2026-04-08 10:37 UTC. Covers 1708 posts, 1708 classified._
 
 ## Who is posting
 
 | Role | Posts | Share |
 |---|---:|---:|
-| unknown | 1499 | 87.3% |
+| unknown | 1492 | 87.4% |
 | company_driver | 74 | 4.3% |
-| owner_operator | 71 | 4.1% |
-| freight_broker | 58 | 3.4% |
+| owner_operator | 70 | 4.1% |
+| freight_broker | 56 | 3.3% |
 | dispatcher | 8 | 0.5% |
-| carrier_owner | 6 | 0.3% |
+| carrier_owner | 6 | 0.4% |
 | shipper | 2 | 0.1% |
 
 ## Top topics
 
 | Topic | Mentions |
 |---|---:|
-| market_conditions | 165 |
+| market_conditions | 162 |
 | safety_and_inspections | 114 |
-| dispatch_workflow | 95 |
+| dispatch_workflow | 92 |
 | authority_and_compliance | 88 |
 | driver_recruiting_and_retention | 84 |
-| fuel_costs | 80 |
-| broker_trust_and_scams | 61 |
+| fuel_costs | 77 |
+| broker_trust_and_scams | 60 |
 | maintenance_and_repairs | 58 |
-| rate_negotiation | 40 |
+| rate_negotiation | 39 |
 | load_board_frustration | 31 |
 | eld_and_hos | 31 |
 | document_and_paperwork | 26 |
@@ -36,7 +36,7 @@ _Generated 2026-04-07 10:35 UTC. Covers 1718 posts, 1718 classified._
 
 ## Top pain points (free-form)
 
-- **(9)** high diesel prices
+- **(8)** high diesel prices
 - **(7)** high fuel prices
 - **(5)** high insurance costs
 - **(4)** high fuel costs
@@ -139,11 +139,11 @@ _Generated 2026-04-07 10:35 UTC. Covers 1718 posts, 1718 classified._
 | Subreddit | Classified posts |
 |---|---:|
 | r/Truckers | 990 |
-| r/FreightBrokers | 206 |
-| r/CDLTruckDrivers | 196 |
-| r/OwnerOperators | 129 |
-| r/Truckdrivers | 83 |
-| r/HotShotTrucking | 69 |
+| r/FreightBrokers | 202 |
+| r/CDLTruckDrivers | 193 |
+| r/OwnerOperators | 128 |
+| r/Truckdrivers | 82 |
+| r/HotShotTrucking | 68 |
 | r/TruckingStartups | 21 |
 | r/HotshotStartup | 13 |
 | r/TruckDispatchers | 11 |
