@@ -1,15 +1,15 @@
 # Numeo Reddit market snapshot — since 30d
 
-_Generated 2026-04-09 10:41 UTC. Covers 1685 posts, 1685 classified._
+_Generated 2026-04-10 10:36 UTC. Covers 1656 posts, 1656 classified._
 
 ## Who is posting
 
 | Role | Posts | Share |
 |---|---:|---:|
-| unknown | 1478 | 87.7% |
-| company_driver | 74 | 4.4% |
-| owner_operator | 64 | 3.8% |
-| freight_broker | 54 | 3.2% |
+| unknown | 1452 | 87.7% |
+| company_driver | 74 | 4.5% |
+| owner_operator | 63 | 3.8% |
+| freight_broker | 52 | 3.1% |
 | dispatcher | 8 | 0.5% |
 | carrier_owner | 5 | 0.3% |
 | shipper | 2 | 0.1% |
@@ -18,41 +18,39 @@ _Generated 2026-04-09 10:41 UTC. Covers 1685 posts, 1685 classified._
 
 | Topic | Mentions |
 |---|---:|
-| market_conditions | 157 |
-| safety_and_inspections | 114 |
-| dispatch_workflow | 89 |
+| market_conditions | 153 |
+| safety_and_inspections | 112 |
 | authority_and_compliance | 88 |
-| driver_recruiting_and_retention | 83 |
-| fuel_costs | 76 |
-| broker_trust_and_scams | 60 |
+| dispatch_workflow | 87 |
+| driver_recruiting_and_retention | 82 |
+| fuel_costs | 74 |
+| broker_trust_and_scams | 58 |
 | maintenance_and_repairs | 57 |
-| rate_negotiation | 36 |
-| load_board_frustration | 30 |
-| eld_and_hos | 30 |
-| document_and_paperwork | 25 |
+| rate_negotiation | 35 |
+| load_board_frustration | 29 |
+| eld_and_hos | 29 |
+| document_and_paperwork | 24 |
 | insurance_and_claims | 20 |
 | factoring_and_cashflow | 18 |
-| tms_and_software | 15 |
+| tms_and_software | 14 |
 
 ## Top pain points (free-form)
 
 - **(7)** high diesel prices
-- **(7)** high fuel prices
-- **(5)** high insurance costs
+- **(6)** high fuel prices
 - **(4)** Uncertainty about insurance requirements
+- **(4)** high insurance costs
 - **(4)** claims of non-payment
 - **(4)** bond pending cancellation
 - **(3)** high fuel costs
 - **(3)** system problems affecting compliance
 - **(3)** low pay for new drivers
-- **(3)** dangerous driving conditions
 - **(2)** manage paperwork
 - **(2)** find reliable loads
 - **(2)** lack of communication
 - **(2)** High fuel prices
 - **(2)** expired medical card tracking
 - **(2)** building reputation with no loads
-- **(2)** manual data entry
 - **(2)** loneliness on the road
 - **(2)** difficulty reaching shippers
 - **(2)** High diesel prices
@@ -61,12 +59,14 @@ _Generated 2026-04-09 10:41 UTC. Covers 1685 posts, 1685 classified._
 - **(2)** job security concerns
 - **(2)** small carriers losing money on fuel
 - **(2)** compliance issues blamed on drivers
+- **(2)** detention pay issues
+- **(2)** dangerous driving conditions
 
 ## Competitor mentions
 
 | Tool | Mentions |
 |---|---:|
-| DAT | 18 |
+| DAT | 17 |
 | Trucker Path | 13 |
 | Truckstop | 7 |
 | TQL | 7 |
@@ -77,12 +77,11 @@ _Generated 2026-04-09 10:41 UTC. Covers 1685 posts, 1685 classified._
 | Geotab | 3 |
 | Progressive | 3 |
 | Schneider | 3 |
-| Highway | 2 |
 | overtheroad.ai | 2 |
 | Knight | 2 |
 | Geico | 2 |
+| Highway | 1 |
 | McLeod | 1 |
-| FreshX | 1 |
 | Alvys | 1 |
 | Portpro | 1 |
 | RoseRockets | 1 |
@@ -139,13 +138,13 @@ _Generated 2026-04-09 10:41 UTC. Covers 1685 posts, 1685 classified._
 | Subreddit | Classified posts |
 |---|---:|
 | r/Truckers | 990 |
-| r/FreightBrokers | 196 |
-| r/CDLTruckDrivers | 189 |
-| r/OwnerOperators | 117 |
-| r/Truckdrivers | 82 |
-| r/HotShotTrucking | 68 |
-| r/TruckingStartups | 21 |
-| r/HotshotStartup | 12 |
+| r/FreightBrokers | 187 |
+| r/CDLTruckDrivers | 181 |
+| r/OwnerOperators | 114 |
+| r/Truckdrivers | 80 |
+| r/HotShotTrucking | 64 |
+| r/TruckingStartups | 19 |
+| r/HotshotStartup | 11 |
 | r/TruckDispatchers | 10 |
 
 ## Highest-relevance posts
