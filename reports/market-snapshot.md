@@ -1,15 +1,15 @@
 # Numeo Reddit market snapshot — since 30d
 
-_Generated 2026-04-10 10:36 UTC. Covers 1656 posts, 1656 classified._
+_Generated 2026-04-11 10:14 UTC. Covers 1634 posts, 1634 classified._
 
 ## Who is posting
 
 | Role | Posts | Share |
 |---|---:|---:|
-| unknown | 1452 | 87.7% |
-| company_driver | 74 | 4.5% |
-| owner_operator | 63 | 3.8% |
-| freight_broker | 52 | 3.1% |
+| unknown | 1436 | 87.9% |
+| company_driver | 73 | 4.5% |
+| owner_operator | 60 | 3.7% |
+| freight_broker | 50 | 3.1% |
 | dispatcher | 8 | 0.5% |
 | carrier_owner | 5 | 0.3% |
 | shipper | 2 | 0.1% |
@@ -18,19 +18,19 @@ _Generated 2026-04-10 10:36 UTC. Covers 1656 posts, 1656 classified._
 
 | Topic | Mentions |
 |---|---:|
-| market_conditions | 153 |
-| safety_and_inspections | 112 |
-| authority_and_compliance | 88 |
+| market_conditions | 150 |
+| safety_and_inspections | 111 |
 | dispatch_workflow | 87 |
-| driver_recruiting_and_retention | 82 |
-| fuel_costs | 74 |
+| authority_and_compliance | 87 |
+| driver_recruiting_and_retention | 81 |
+| fuel_costs | 73 |
 | broker_trust_and_scams | 58 |
-| maintenance_and_repairs | 57 |
-| rate_negotiation | 35 |
-| load_board_frustration | 29 |
-| eld_and_hos | 29 |
+| maintenance_and_repairs | 54 |
+| rate_negotiation | 33 |
+| load_board_frustration | 28 |
+| eld_and_hos | 28 |
 | document_and_paperwork | 24 |
-| insurance_and_claims | 20 |
+| insurance_and_claims | 19 |
 | factoring_and_cashflow | 18 |
 | tms_and_software | 14 |
 
@@ -39,12 +39,12 @@ _Generated 2026-04-10 10:36 UTC. Covers 1656 posts, 1656 classified._
 - **(7)** high diesel prices
 - **(6)** high fuel prices
 - **(4)** Uncertainty about insurance requirements
-- **(4)** high insurance costs
 - **(4)** claims of non-payment
 - **(4)** bond pending cancellation
 - **(3)** high fuel costs
 - **(3)** system problems affecting compliance
 - **(3)** low pay for new drivers
+- **(3)** high insurance costs
 - **(2)** manage paperwork
 - **(2)** find reliable loads
 - **(2)** lack of communication
@@ -76,10 +76,10 @@ _Generated 2026-04-10 10:36 UTC. Covers 1656 posts, 1656 classified._
 | Uber Freight | 3 |
 | Geotab | 3 |
 | Progressive | 3 |
-| Schneider | 3 |
 | overtheroad.ai | 2 |
 | Knight | 2 |
 | Geico | 2 |
+| Schneider | 2 |
 | Highway | 1 |
 | McLeod | 1 |
 | Alvys | 1 |
@@ -126,8 +126,6 @@ _Generated 2026-04-10 10:36 UTC. Covers 1656 posts, 1656 classified._
 | Omnitracs | 1 |
 | Intangles | 1 |
 | Western Express | 1 |
-| PRIME inc | 1 |
-| swift | 1 |
 | Mudflap | 1 |
 | Werner | 1 |
 | Covenant | 1 |
@@ -138,14 +136,14 @@ _Generated 2026-04-10 10:36 UTC. Covers 1656 posts, 1656 classified._
 | Subreddit | Classified posts |
 |---|---:|
 | r/Truckers | 990 |
-| r/FreightBrokers | 187 |
-| r/CDLTruckDrivers | 181 |
-| r/OwnerOperators | 114 |
-| r/Truckdrivers | 80 |
-| r/HotShotTrucking | 64 |
+| r/FreightBrokers | 184 |
+| r/CDLTruckDrivers | 176 |
+| r/OwnerOperators | 110 |
+| r/Truckdrivers | 78 |
+| r/HotShotTrucking | 57 |
 | r/TruckingStartups | 19 |
-| r/HotshotStartup | 11 |
 | r/TruckDispatchers | 10 |
+| r/HotshotStartup | 10 |
 
 ## Highest-relevance posts
 
