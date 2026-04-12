@@ -1,14 +1,14 @@
 # Numeo Reddit market snapshot — since 30d
 
-_Generated 2026-04-11 10:14 UTC. Covers 1634 posts, 1634 classified._
+_Generated 2026-04-12 10:15 UTC. Covers 1607 posts, 1607 classified._
 
 ## Who is posting
 
 | Role | Posts | Share |
 |---|---:|---:|
-| unknown | 1436 | 87.9% |
-| company_driver | 73 | 4.5% |
-| owner_operator | 60 | 3.7% |
+| unknown | 1411 | 87.8% |
+| company_driver | 72 | 4.5% |
+| owner_operator | 59 | 3.7% |
 | freight_broker | 50 | 3.1% |
 | dispatcher | 8 | 0.5% |
 | carrier_owner | 5 | 0.3% |
@@ -18,21 +18,21 @@ _Generated 2026-04-11 10:14 UTC. Covers 1634 posts, 1634 classified._
 
 | Topic | Mentions |
 |---|---:|
-| market_conditions | 150 |
+| market_conditions | 145 |
 | safety_and_inspections | 111 |
-| dispatch_workflow | 87 |
-| authority_and_compliance | 87 |
+| dispatch_workflow | 83 |
+| authority_and_compliance | 83 |
 | driver_recruiting_and_retention | 81 |
-| fuel_costs | 73 |
-| broker_trust_and_scams | 58 |
+| fuel_costs | 71 |
+| broker_trust_and_scams | 56 |
 | maintenance_and_repairs | 54 |
 | rate_negotiation | 33 |
 | load_board_frustration | 28 |
 | eld_and_hos | 28 |
 | document_and_paperwork | 24 |
-| insurance_and_claims | 19 |
 | factoring_and_cashflow | 18 |
-| tms_and_software | 14 |
+| insurance_and_claims | 18 |
+| tms_and_software | 13 |
 
 ## Top pain points (free-form)
 
@@ -75,10 +75,9 @@ _Generated 2026-04-11 10:14 UTC. Covers 1634 posts, 1634 classified._
 | Swift | 4 |
 | Uber Freight | 3 |
 | Geotab | 3 |
-| Progressive | 3 |
 | overtheroad.ai | 2 |
 | Knight | 2 |
-| Geico | 2 |
+| Progressive | 2 |
 | Schneider | 2 |
 | Highway | 1 |
 | McLeod | 1 |
@@ -117,6 +116,7 @@ _Generated 2026-04-11 10:14 UTC. Covers 1634 posts, 1634 classified._
 | Driver Facts | 1 |
 | Tenstreet | 1 |
 | DriverIQ | 1 |
+| Geico | 1 |
 | AAA | 1 |
 | Scale Funding | 1 |
 | RTS | 1 |
@@ -136,11 +136,11 @@ _Generated 2026-04-11 10:14 UTC. Covers 1634 posts, 1634 classified._
 | Subreddit | Classified posts |
 |---|---:|
 | r/Truckers | 990 |
-| r/FreightBrokers | 184 |
-| r/CDLTruckDrivers | 176 |
-| r/OwnerOperators | 110 |
-| r/Truckdrivers | 78 |
-| r/HotShotTrucking | 57 |
+| r/FreightBrokers | 178 |
+| r/CDLTruckDrivers | 169 |
+| r/OwnerOperators | 106 |
+| r/Truckdrivers | 73 |
+| r/HotShotTrucking | 52 |
 | r/TruckingStartups | 19 |
 | r/TruckDispatchers | 10 |
 | r/HotshotStartup | 10 |
